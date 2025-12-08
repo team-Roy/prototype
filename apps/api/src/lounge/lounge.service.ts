@@ -1,0 +1,567 @@
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
+import {
+  CreateLoungeDto,
+  UpdateLoungeDto,
+  LoungeListQueryDto,
+  LoungeSortBy,
+  AddManagerDto,
+} from './dto';
+import { ManagerRole, Prisma } from '@prisma/client';
+import { slugify } from '@fandom/shared';
+
+const CACHE_TTL = 300; // 5 minutes
+const MAX_LOUNGES_PER_USER = 2;
+
+@Injectable()
+export class LoungeService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService
+  ) {}
+
+  async findAll(query: LoungeListQueryDto) {
+    const { q, sortBy = LoungeSortBy.POPULAR, page = 1, limit = 20 } = query;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.LoungeWhereInput = {
+      isActive: true,
+      ...(q && {
+        OR: [
+          { name: { contains: q, mode: Prisma.QueryMode.insensitive } },
+          { description: { contains: q, mode: Prisma.QueryMode.insensitive } },
+        ],
+      }),
+    };
+
+    const orderBy: Prisma.LoungeOrderByWithRelationInput = (() => {
+      switch (sortBy) {
+        case LoungeSortBy.POPULAR:
+          return { memberCount: 'desc' as const };
+        case LoungeSortBy.RECENT:
+          return { createdAt: 'desc' as const };
+        case LoungeSortBy.NAME:
+          return { name: 'asc' as const };
+        default:
+          return { memberCount: 'desc' as const };
+      }
+    })();
+
+    const [lounges, total] = await Promise.all([
+      this.prisma.lounge.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              nickname: true,
+              profileImage: true,
+            },
+          },
+          _count: {
+            select: {
+              posts: true,
+              members: true,
+            },
+          },
+        },
+      }),
+      this.prisma.lounge.count({ where }),
+    ]);
+
+    return {
+      items: lounges.map((lounge) => this.formatLoungeResponse(lounge)),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findPopular(limit: number = 10) {
+    const cacheKey = `lounges:popular:${limit}`;
+    const cached = await this.redis.get(cacheKey);
+
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    const lounges = await this.prisma.lounge.findMany({
+      where: { isActive: true },
+      orderBy: { memberCount: 'desc' },
+      take: limit,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImage: true,
+          },
+        },
+      },
+    });
+
+    const result = lounges.map((lounge) => this.formatLoungeResponse(lounge));
+    await this.redis.set(cacheKey, JSON.stringify(result), CACHE_TTL);
+
+    return result;
+  }
+
+  async findBySlug(slug: string, userId?: string) {
+    const lounge = await this.prisma.lounge.findUnique({
+      where: { slug, isActive: true },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImage: true,
+          },
+        },
+        managers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                nickname: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            posts: true,
+            members: true,
+          },
+        },
+      },
+    });
+
+    if (!lounge) {
+      throw new NotFoundException('라운지를 찾을 수 없습니다');
+    }
+
+    let isMember = false;
+    let isManager = false;
+    let managerRole: ManagerRole | null = null;
+
+    if (userId) {
+      const membership = await this.prisma.loungeMember.findUnique({
+        where: {
+          userId_loungeId: { userId, loungeId: lounge.id },
+        },
+      });
+      isMember = !!membership;
+
+      const manager = lounge.managers.find((m) => m.userId === userId);
+      if (manager) {
+        isManager = true;
+        managerRole = manager.role;
+      }
+    }
+
+    return {
+      ...this.formatLoungeResponse(lounge),
+      managers: lounge.managers.map((m) => ({
+        user: m.user,
+        role: m.role,
+      })),
+      rules: lounge.rules,
+      isMember,
+      isManager,
+      managerRole,
+    };
+  }
+
+  async findById(id: string) {
+    const lounge = await this.prisma.lounge.findUnique({
+      where: { id, isActive: true },
+    });
+
+    if (!lounge) {
+      throw new NotFoundException('라운지를 찾을 수 없습니다');
+    }
+
+    return lounge;
+  }
+
+  async create(userId: string, dto: CreateLoungeDto) {
+    // Check lounge creation limit
+    const userLoungeCount = await this.prisma.lounge.count({
+      where: { creatorId: userId, isActive: true },
+    });
+
+    if (userLoungeCount >= MAX_LOUNGES_PER_USER) {
+      throw new BadRequestException(
+        `사용자당 최대 ${MAX_LOUNGES_PER_USER}개의 라운지만 생성할 수 있습니다`
+      );
+    }
+
+    // Generate slug from name if not provided
+    const slug = dto.slug || slugify(dto.name);
+
+    // Check slug uniqueness
+    const existingLounge = await this.prisma.lounge.findFirst({
+      where: {
+        OR: [{ slug }, { name: dto.name }],
+      },
+    });
+
+    if (existingLounge) {
+      if (existingLounge.name === dto.name) {
+        throw new ConflictException('이미 존재하는 라운지 이름입니다');
+      }
+      throw new ConflictException('이미 존재하는 slug입니다');
+    }
+
+    // Create lounge with creator as OWNER
+    const lounge = await this.prisma.$transaction(async (tx) => {
+      const newLounge = await tx.lounge.create({
+        data: {
+          name: dto.name,
+          slug,
+          description: dto.description,
+          creatorId: userId,
+        },
+        include: {
+          creator: {
+            select: {
+              id: true,
+              nickname: true,
+              profileImage: true,
+            },
+          },
+        },
+      });
+
+      // Add creator as OWNER manager
+      await tx.loungeManager.create({
+        data: {
+          userId,
+          loungeId: newLounge.id,
+          role: ManagerRole.OWNER,
+        },
+      });
+
+      // Add creator as member
+      await tx.loungeMember.create({
+        data: {
+          userId,
+          loungeId: newLounge.id,
+        },
+      });
+
+      // Update member count
+      await tx.lounge.update({
+        where: { id: newLounge.id },
+        data: { memberCount: 1 },
+      });
+
+      return newLounge;
+    });
+
+    // Invalidate cache
+    await this.invalidateCache();
+
+    return this.formatLoungeResponse(lounge);
+  }
+
+  async update(loungeId: string, userId: string, dto: UpdateLoungeDto) {
+    await this.checkManagerPermission(loungeId, userId);
+
+    const lounge = await this.prisma.lounge.update({
+      where: { id: loungeId },
+      data: dto,
+      include: {
+        creator: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImage: true,
+          },
+        },
+      },
+    });
+
+    await this.invalidateCache();
+
+    return this.formatLoungeResponse(lounge);
+  }
+
+  async delete(loungeId: string, userId: string) {
+    await this.checkOwnerPermission(loungeId, userId);
+
+    await this.prisma.lounge.update({
+      where: { id: loungeId },
+      data: { isActive: false },
+    });
+
+    await this.invalidateCache();
+
+    return { message: '라운지가 삭제되었습니다' };
+  }
+
+  async join(loungeId: string, userId: string) {
+    const lounge = await this.findById(loungeId);
+
+    // Check if banned
+    const ban = await this.prisma.loungeBan.findUnique({
+      where: {
+        userId_loungeId: { userId, loungeId },
+      },
+    });
+
+    if (ban && (!ban.expiresAt || ban.expiresAt > new Date())) {
+      throw new ForbiddenException('이 라운지에서 차단되었습니다');
+    }
+
+    // Check if already a member
+    const existingMembership = await this.prisma.loungeMember.findUnique({
+      where: {
+        userId_loungeId: { userId, loungeId },
+      },
+    });
+
+    if (existingMembership) {
+      throw new ConflictException('이미 가입한 라운지입니다');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.loungeMember.create({
+        data: { userId, loungeId },
+      });
+
+      await tx.lounge.update({
+        where: { id: loungeId },
+        data: { memberCount: { increment: 1 } },
+      });
+    });
+
+    await this.invalidateCache();
+
+    return { message: `${lounge.name} 라운지에 가입했습니다` };
+  }
+
+  async leave(loungeId: string, userId: string) {
+    const lounge = await this.findById(loungeId);
+
+    // Check if owner
+    const manager = await this.prisma.loungeManager.findUnique({
+      where: {
+        userId_loungeId: { userId, loungeId },
+      },
+    });
+
+    if (manager?.role === ManagerRole.OWNER) {
+      throw new BadRequestException(
+        '라운지 소유자는 탈퇴할 수 없습니다. 소유권을 이전하거나 라운지를 삭제하세요.'
+      );
+    }
+
+    // Check if member
+    const membership = await this.prisma.loungeMember.findUnique({
+      where: {
+        userId_loungeId: { userId, loungeId },
+      },
+    });
+
+    if (!membership) {
+      throw new BadRequestException('가입하지 않은 라운지입니다');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // Remove manager role if exists
+      if (manager) {
+        await tx.loungeManager.delete({
+          where: {
+            userId_loungeId: { userId, loungeId },
+          },
+        });
+      }
+
+      await tx.loungeMember.delete({
+        where: {
+          userId_loungeId: { userId, loungeId },
+        },
+      });
+
+      await tx.lounge.update({
+        where: { id: loungeId },
+        data: { memberCount: { decrement: 1 } },
+      });
+    });
+
+    await this.invalidateCache();
+
+    return { message: `${lounge.name} 라운지에서 탈퇴했습니다` };
+  }
+
+  async addManager(loungeId: string, userId: string, dto: AddManagerDto) {
+    await this.checkOwnerPermission(loungeId, userId);
+
+    // Check if target user is a member
+    const membership = await this.prisma.loungeMember.findUnique({
+      where: {
+        userId_loungeId: { userId: dto.userId, loungeId },
+      },
+    });
+
+    if (!membership) {
+      throw new BadRequestException('라운지 멤버만 매니저로 지정할 수 있습니다');
+    }
+
+    // Check if already a manager
+    const existingManager = await this.prisma.loungeManager.findUnique({
+      where: {
+        userId_loungeId: { userId: dto.userId, loungeId },
+      },
+    });
+
+    if (existingManager) {
+      throw new ConflictException('이미 매니저입니다');
+    }
+
+    await this.prisma.loungeManager.create({
+      data: {
+        userId: dto.userId,
+        loungeId,
+        role: dto.role || ManagerRole.MANAGER,
+      },
+    });
+
+    return { message: '매니저가 추가되었습니다' };
+  }
+
+  async removeManager(loungeId: string, userId: string, targetUserId: string) {
+    await this.checkOwnerPermission(loungeId, userId);
+
+    const manager = await this.prisma.loungeManager.findUnique({
+      where: {
+        userId_loungeId: { userId: targetUserId, loungeId },
+      },
+    });
+
+    if (!manager) {
+      throw new NotFoundException('매니저를 찾을 수 없습니다');
+    }
+
+    if (manager.role === ManagerRole.OWNER) {
+      throw new BadRequestException('소유자는 삭제할 수 없습니다');
+    }
+
+    await this.prisma.loungeManager.delete({
+      where: {
+        userId_loungeId: { userId: targetUserId, loungeId },
+      },
+    });
+
+    return { message: '매니저가 삭제되었습니다' };
+  }
+
+  async getMyLounges(userId: string) {
+    const memberships = await this.prisma.loungeMember.findMany({
+      where: { userId },
+      include: {
+        lounge: {
+          include: {
+            creator: {
+              select: {
+                id: true,
+                nickname: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
+    });
+
+    return memberships.map((m) => ({
+      ...this.formatLoungeResponse(m.lounge),
+      joinedAt: m.joinedAt,
+    }));
+  }
+
+  // Helper methods
+  private async checkManagerPermission(loungeId: string, userId: string) {
+    const manager = await this.prisma.loungeManager.findUnique({
+      where: {
+        userId_loungeId: { userId, loungeId },
+      },
+    });
+
+    if (!manager) {
+      throw new ForbiddenException('매니저 권한이 필요합니다');
+    }
+
+    return manager;
+  }
+
+  private async checkOwnerPermission(loungeId: string, userId: string) {
+    const manager = await this.checkManagerPermission(loungeId, userId);
+
+    if (manager.role !== ManagerRole.OWNER) {
+      throw new ForbiddenException('소유자 권한이 필요합니다');
+    }
+
+    return manager;
+  }
+
+  private formatLoungeResponse(lounge: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    coverImage: string | null;
+    icon: string | null;
+    isOfficial: boolean;
+    memberCount: number;
+    postCount: number;
+    createdAt: Date;
+    rules?: string | null;
+    creator?: {
+      id: string;
+      nickname: string;
+      profileImage: string | null;
+    };
+    _count?: {
+      posts: number;
+      members: number;
+    };
+  }) {
+    return {
+      id: lounge.id,
+      name: lounge.name,
+      slug: lounge.slug,
+      description: lounge.description,
+      coverImage: lounge.coverImage,
+      icon: lounge.icon,
+      isOfficial: lounge.isOfficial,
+      memberCount: lounge._count?.members ?? lounge.memberCount,
+      postCount: lounge._count?.posts ?? lounge.postCount,
+      createdAt: lounge.createdAt,
+      creator: lounge.creator,
+    };
+  }
+
+  private async invalidateCache() {
+    const keys = await this.redis.keys('lounges:*');
+    if (keys.length > 0) {
+      await Promise.all(keys.map((key) => this.redis.del(key)));
+    }
+  }
+}

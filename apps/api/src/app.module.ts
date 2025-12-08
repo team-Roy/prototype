@@ -8,6 +8,7 @@ import { RedisModule } from './redis/redis.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
+import { LoungeModule } from './lounge/lounge.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor } from './common/interceptors';
 
@@ -40,6 +41,7 @@ import { TransformInterceptor } from './common/interceptors';
     HealthModule,
     AuthModule,
     UserModule,
+    LoungeModule,
   ],
   providers: [
     {
