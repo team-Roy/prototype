@@ -5,7 +5,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { loungeApi, LoungeDetailResponse } from '@/lib/lounge';
 import { LoungeHeader } from '@/components/lounge';
+import { PostList } from '@/components/post';
 import { Button } from '@/components/ui/button';
+
 export default function LoungePage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -70,11 +72,8 @@ export default function LoungePage() {
         </div>
       )}
 
-      {/* Posts Section (placeholder for TASK 8) */}
-      <div className="bg-card rounded-lg p-6 text-center text-muted-foreground">
-        <p>게시물이 여기에 표시됩니다</p>
-        <p className="text-sm mt-1">(게시물 시스템은 다음 태스크에서 구현됩니다)</p>
-      </div>
+      {/* Posts */}
+      <PostList loungeId={lounge.id} loungeSlug={lounge.slug} />
     </div>
   );
 }
