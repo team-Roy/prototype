@@ -13,6 +13,7 @@ import { PostModule } from './post/post.module';
 import { CommentModule } from './comment/comment.module';
 import { MediaModule } from './media/media.module';
 import { VoteModule } from './vote/vote.module';
+import { SearchModule } from './search/search.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor } from './common/interceptors';
 
@@ -50,6 +51,7 @@ import { TransformInterceptor } from './common/interceptors';
     CommentModule,
     MediaModule,
     VoteModule,
+    SearchModule,
   ],
   providers: [
     {

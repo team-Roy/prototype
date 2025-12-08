@@ -1,23 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchBar } from '@/components/search';
 
 export function Header() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   const handleLogout = async () => {
     await logout();
@@ -33,15 +24,9 @@ export function Header() {
         </Link>
 
         {/* Search */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-md mx-4">
-          <Input
-            type="search"
-            placeholder="라운지, 게시물 검색..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
-          />
-        </form>
+        <div className="flex-1 max-w-md mx-4">
+          <SearchBar showSuggestions={true} />
+        </div>
 
         {/* User Menu */}
         <div className="flex items-center gap-2">
