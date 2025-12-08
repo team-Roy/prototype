@@ -1,0 +1,26 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy } from 'passport-local';
+import { AuthService } from '../auth.service';
+import { ERROR_CODES } from '@fandom/shared';
+
+@Injectable()
+export class LocalStrategy extends PassportStrategy(Strategy) {
+  constructor(private authService: AuthService) {
+    super({
+      usernameField: 'email',
+      passwordField: 'password',
+    });
+  }
+
+  async validate(email: string, password: string) {
+    const user = await this.authService.validateUser(email, password);
+    if (!user) {
+      throw new UnauthorizedException({
+        code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+        message: '이메일 또는 비밀번호가 올바르지 않습니다.',
+      });
+    }
+    return user;
+  }
+}
