@@ -7,23 +7,23 @@
 
 ## 📋 태스크 체크리스트
 
-| # | 태스크 | 예상 시간 | 의존성 | 상태 |
-|---|--------|----------|--------|------|
-| 1 | 프로젝트 초기 설정 | 30분 | - | ✅ 완료 |
-| 2 | DB 스키마 설계 | 1시간 | #1 | ✅ 완료 (기존 스키마 적용) |
-| 3 | 인증 시스템 (Backend) | 2시간 | #2 | ✅ 완료 |
-| 4 | 인증 시스템 (Frontend) | 2시간 | #3 | 진행 예정 |
-| 5 | 라운지 CRUD (Backend) | 2시간 | #3 | 대기 |
-| 6 | 라운지 UI (Frontend) | 2시간 | #4, #5 | 대기 |
-| 7 | 게시물 시스템 (Backend) | 2시간 | #5 | 대기 |
-| 8 | 게시물 UI (Frontend) | 3시간 | #6, #7 | 대기 |
-| 9 | 댓글 시스템 | 1.5시간 | #7 | 대기 |
-| 10 | 미디어 업로드 | 2시간 | #7 | 대기 |
-| 11 | 추천/비추천 시스템 | 1시간 | #7 | 대기 |
-| 12 | 검색 기능 | 1.5시간 | #5, #7 | 대기 |
-| 13 | 알림 시스템 | 2시간 | #9 | 대기 |
-| 14 | 관리자 기능 | 2시간 | All | 대기 |
-| 15 | 배포 설정 | 1시간 | All | 대기 |
+| #   | 태스크                  | 예상 시간 | 의존성 | 상태                       |
+| --- | ----------------------- | --------- | ------ | -------------------------- |
+| 1   | 프로젝트 초기 설정      | 30분      | -      | ✅ 완료                    |
+| 2   | DB 스키마 설계          | 1시간     | #1     | ✅ 완료 (기존 스키마 적용) |
+| 3   | 인증 시스템 (Backend)   | 2시간     | #2     | ✅ 완료                    |
+| 4   | 인증 시스템 (Frontend)  | 2시간     | #3     | ✅ 완료                    |
+| 5   | 라운지 CRUD (Backend)   | 2시간     | #3     | 대기                       |
+| 6   | 라운지 UI (Frontend)    | 2시간     | #4, #5 | 대기                       |
+| 7   | 게시물 시스템 (Backend) | 2시간     | #5     | 대기                       |
+| 8   | 게시물 UI (Frontend)    | 3시간     | #6, #7 | 대기                       |
+| 9   | 댓글 시스템             | 1.5시간   | #7     | 대기                       |
+| 10  | 미디어 업로드           | 2시간     | #7     | 대기                       |
+| 11  | 추천/비추천 시스템      | 1시간     | #7     | 대기                       |
+| 12  | 검색 기능               | 1.5시간   | #5, #7 | 대기                       |
+| 13  | 알림 시스템             | 2시간     | #9     | 대기                       |
+| 14  | 관리자 기능             | 2시간     | All    | 대기                       |
+| 15  | 배포 설정               | 1시간     | All    | 대기                       |
 
 **총 예상 시간: 약 24시간**
 
@@ -32,6 +32,7 @@
 ## TASK 1: 프로젝트 초기 설정
 
 ### 프롬프트
+
 ```
 팬덤 커뮤니티 플랫폼 "팬덤 라운지" 프로젝트를 초기 설정해줘.
 
@@ -65,6 +66,7 @@ fandom-lounge/
 ```
 
 ### 완료 기준
+
 - [ ] `pnpm install` 성공
 - [ ] `pnpm dev` 실행 시 웹/API 동시 실행
 - [ ] `docker-compose up -d`로 DB/Redis 실행
@@ -75,6 +77,7 @@ fandom-lounge/
 ## TASK 2: DB 스키마 설계
 
 ### 프롬프트
+
 ```
 Prisma 스키마를 설계해줘. apps/api/prisma/schema.prisma
 
@@ -160,6 +163,7 @@ Prisma 스키마를 설계해줘. apps/api/prisma/schema.prisma
 ```
 
 ### 완료 기준
+
 - [ ] 스키마 문법 에러 없음
 - [ ] `prisma generate` 성공
 - [ ] 관계 설정 정확
@@ -169,6 +173,7 @@ Prisma 스키마를 설계해줘. apps/api/prisma/schema.prisma
 ## TASK 3: 인증 시스템 (Backend)
 
 ### 프롬프트
+
 ```
 NestJS 인증 시스템을 구현해줘.
 
@@ -177,20 +182,20 @@ NestJS 인증 시스템을 구현해줘.
    - POST /auth/register
    - email, password, nickname 검증
    - 비밀번호 bcrypt 해싱
-   
+
 2. 로그인
    - POST /auth/login
    - JWT Access Token (15분) + Refresh Token (7일)
    - Refresh Token은 Redis에 저장
-   
+
 3. 토큰 갱신
    - POST /auth/refresh
    - Refresh Token으로 새 Access Token 발급
-   
+
 4. 로그아웃
    - POST /auth/logout
    - Redis에서 Refresh Token 삭제
-   
+
 5. 소셜 로그인 (카카오, 구글)
    - GET /auth/kakao
    - GET /auth/kakao/callback
@@ -221,6 +226,7 @@ Zod 스키마 (packages/shared에 정의):
 ```
 
 ### 완료 기준
+
 - [ ] 회원가입/로그인 테스트 통과
 - [ ] JWT 발급 및 검증 동작
 - [ ] Refresh Token 갱신 동작
@@ -231,6 +237,7 @@ Zod 스키마 (packages/shared에 정의):
 ## TASK 4: 인증 시스템 (Frontend)
 
 ### 프롬프트
+
 ```
 Next.js 인증 UI와 상태 관리를 구현해줘.
 
@@ -239,7 +246,7 @@ Next.js 인증 UI와 상태 관리를 구현해줘.
    - 이메일/비밀번호 폼
    - 소셜 로그인 버튼 (카카오, 구글)
    - 회원가입 링크
-   
+
 2. /register - 회원가입 페이지
    - 이메일, 비밀번호, 비밀번호 확인, 닉네임
    - 실시간 유효성 검사
@@ -279,6 +286,7 @@ API 클라이언트 (lib/api.ts):
 ```
 
 ### 완료 기준
+
 - [ ] 로그인/회원가입 폼 동작
 - [ ] 토큰 자동 갱신 동작
 - [ ] 보호 라우트 리다이렉트 동작
@@ -288,6 +296,7 @@ API 클라이언트 (lib/api.ts):
 ## TASK 5: 라운지 CRUD (Backend)
 
 ### 프롬프트
+
 ```
 라운지(커뮤니티) API를 구현해줘.
 
@@ -296,34 +305,34 @@ API 클라이언트 (lib/api.ts):
    - 라운지 목록 (페이지네이션)
    - 정렬: popular(인기순), recent(최신순), name(이름순)
    - 검색: ?q=검색어
-   
+
 2. GET /lounges/:slug
    - 라운지 상세 (slug로 조회)
    - 매니저 목록 포함
-   
+
 3. POST /lounges
    - 라운지 생성 (인증 필수)
    - name, slug(자동생성 가능), description
    - 생성자는 자동으로 OWNER
    - 유저당 생성 제한: 2개
-   
+
 4. PATCH /lounges/:id
    - 라운지 수정 (OWNER/MANAGER만)
    - name, description, coverImage, icon
-   
+
 5. DELETE /lounges/:id
    - 라운지 삭제 (OWNER만)
    - Soft delete
 
 6. POST /lounges/:id/join
    - 라운지 가입
-   
+
 7. DELETE /lounges/:id/leave
    - 라운지 탈퇴
 
 8. POST /lounges/:id/managers
    - 매니저 추가 (OWNER만)
-   
+
 9. DELETE /lounges/:id/managers/:userId
    - 매니저 삭제 (OWNER만)
 
@@ -340,6 +349,7 @@ DTO:
 ```
 
 ### 완료 기준
+
 - [ ] CRUD API 동작
 - [ ] 권한 검사 동작
 - [ ] 페이지네이션 동작
@@ -349,6 +359,7 @@ DTO:
 ## TASK 6: 라운지 UI (Frontend)
 
 ### 프롬프트
+
 ```
 라운지 관련 UI를 구현해줘.
 
@@ -358,18 +369,18 @@ DTO:
    - 최신 라운지 목록
    - 라운지 검색
    - 라운지 생성 버튼
-   
+
 2. /lounge/[slug]
    - 라운지 메인 (게시물 목록은 다음 태스크)
    - 라운지 정보 헤더 (이름, 설명, 멤버수)
    - 가입/탈퇴 버튼
    - 게시물 작성 버튼
-   
+
 3. /lounge/create
    - 라운지 생성 폼
    - 이름, 설명 입력
    - slug 자동 생성 (이름 기반)
-   
+
 4. /lounge/[slug]/settings (OWNER/MANAGER만)
    - 라운지 설정
    - 정보 수정
@@ -397,6 +408,7 @@ DTO:
 ```
 
 ### 완료 기준
+
 - [ ] 홈 페이지 라운지 목록 표시
 - [ ] 라운지 생성/수정 폼 동작
 - [ ] 반응형 레이아웃 동작
@@ -406,6 +418,7 @@ DTO:
 ## TASK 7: 게시물 시스템 (Backend)
 
 ### 프롬프트
+
 ```
 게시물 API를 구현해줘.
 
@@ -415,28 +428,28 @@ DTO:
    - 정렬: recent, popular, comments
    - 필터: type (TEXT, IMAGE, VIDEO, CLIP, FANART)
    - 태그 필터: ?tag=태그
-   
+
 2. GET /posts/:id
    - 게시물 상세
    - 조회수 증가 (Redis로 디바운스)
    - 미디어, 태그, 클립정보 포함
-   
+
 3. POST /lounges/:loungeId/posts
    - 게시물 작성 (인증 필수)
    - type, title, content, tags
    - isAnonymous 옵션
-   
+
 4. PATCH /posts/:id
    - 게시물 수정 (작성자만)
    - 익명 게시물은 수정 불가? (정책 결정)
-   
+
 5. DELETE /posts/:id
    - 게시물 삭제 (작성자 또는 매니저)
    - Soft delete
-   
+
 6. POST /posts/:id/pin
    - 게시물 고정 (매니저만)
-   
+
 7. POST /posts/:id/notice
    - 공지로 설정 (매니저만)
 
@@ -453,6 +466,7 @@ DTO:
 ```
 
 ### 완료 기준
+
 - [ ] CRUD API 동작
 - [ ] 필터/정렬 동작
 - [ ] 조회수 중복 방지
@@ -462,6 +476,7 @@ DTO:
 ## TASK 8: 게시물 UI (Frontend)
 
 ### 프롬프트
+
 ```
 게시물 관련 UI를 구현해줘.
 
@@ -513,6 +528,7 @@ DTO:
 ```
 
 ### 완료 기준
+
 - [ ] 게시물 목록/상세 표시
 - [ ] 게시물 작성 폼 동작
 - [ ] 이미지 업로드 UI 동작
@@ -522,6 +538,7 @@ DTO:
 ## TASK 9: 댓글 시스템
 
 ### 프롬프트
+
 ```
 댓글 시스템을 구현해줘.
 
@@ -529,15 +546,15 @@ Backend API:
 1. GET /posts/:postId/comments
    - 댓글 목록 (대댓글 포함)
    - 정렬: recent, popular
-   
+
 2. POST /posts/:postId/comments
    - 댓글 작성
    - content, isAnonymous
    - parentId (대댓글)
-   
+
 3. PATCH /comments/:id
    - 댓글 수정 (작성자만)
-   
+
 4. DELETE /comments/:id
    - 댓글 삭제 (작성자 또는 매니저)
 
@@ -555,6 +572,7 @@ Frontend:
 ```
 
 ### 완료 기준
+
 - [ ] 댓글 CRUD 동작
 - [ ] 대댓글 동작
 - [ ] 실시간 댓글 수 반영
@@ -564,6 +582,7 @@ Frontend:
 ## TASK 10: 미디어 업로드
 
 ### 프롬프트
+
 ```
 Cloudflare R2를 이용한 미디어 업로드 시스템을 구현해줘.
 
@@ -573,7 +592,7 @@ Backend:
    - 파일 타입, 크기 검증
    - 허용: jpg, png, gif, webp, mp4, webm
    - 최대 크기: 이미지 10MB, 영상 100MB
-   
+
 2. POST /media/complete
    - 업로드 완료 처리
    - DB에 미디어 정보 저장
@@ -598,6 +617,7 @@ R2 설정:
 ```
 
 ### 완료 기준
+
 - [ ] Presigned URL 발급 동작
 - [ ] 파일 업로드 동작
 - [ ] 이미지 미리보기 동작
@@ -607,6 +627,7 @@ R2 설정:
 ## TASK 11: 추천/비추천 시스템
 
 ### 프롬프트
+
 ```
 추천/비추천 시스템을 구현해줘.
 
@@ -615,7 +636,7 @@ Backend API:
    - body: { type: 'UPVOTE' | 'DOWNVOTE' }
    - 토글: 같은 타입 다시 누르면 취소
    - 반대 타입 누르면 변경
-   
+
 2. POST /comments/:id/vote
    - 동일한 로직
 
@@ -635,6 +656,7 @@ Frontend:
 ```
 
 ### 완료 기준
+
 - [ ] 투표 토글 동작
 - [ ] 카운트 실시간 반영
 - [ ] 낙관적 업데이트 동작
@@ -644,6 +666,7 @@ Frontend:
 ## TASK 12: 검색 기능
 
 ### 프롬프트
+
 ```
 검색 기능을 구현해줘.
 
@@ -653,7 +676,7 @@ Backend API:
    - 라운지: 이름, 설명 검색
    - 게시물: 제목, 내용 검색
    - 태그 검색: #태그명
-   
+
 2. GET /search/tags
    - 인기 태그 목록
    - ?q=태그검색 (자동완성용)
@@ -678,6 +701,7 @@ Frontend:
 ```
 
 ### 완료 기준
+
 - [ ] 라운지/게시물 검색 동작
 - [ ] 태그 자동완성 동작
 - [ ] 검색 결과 표시
@@ -687,6 +711,7 @@ Frontend:
 ## TASK 13: 알림 시스템
 
 ### 프롬프트
+
 ```
 알림 시스템을 구현해줘.
 
@@ -694,13 +719,13 @@ Backend:
 1. GET /notifications
    - 내 알림 목록 (페이지네이션)
    - 안읽은 알림 우선
-   
+
 2. POST /notifications/:id/read
    - 알림 읽음 처리
-   
+
 3. POST /notifications/read-all
    - 전체 읽음 처리
-   
+
 4. GET /notifications/unread-count
    - 안읽은 알림 수 (헤더용)
 
@@ -726,6 +751,7 @@ Frontend:
 ```
 
 ### 완료 기준
+
 - [ ] 알림 생성 동작
 - [ ] 알림 목록 표시
 - [ ] 읽음 처리 동작
@@ -735,6 +761,7 @@ Frontend:
 ## TASK 14: 관리자 기능
 
 ### 프롬프트
+
 ```
 관리자/매니저 기능을 구현해줘.
 
@@ -743,14 +770,14 @@ Frontend:
    - 삭제/블라인드 처리
    - 공지로 설정
    - 고정
-   
+
 2. 댓글 관리
    - 삭제
-   
+
 3. 유저 관리 (라운지 내)
    - 차단 (loungeId + userId)
    - 차단 해제
-   
+
 4. 라운지 설정
    - 정보 수정
    - 규칙 설정 (마크다운)
@@ -774,6 +801,7 @@ Frontend:
 ```
 
 ### 완료 기준
+
 - [ ] 매니저 기능 동작
 - [ ] 차단 기능 동작
 - [ ] 권한 검사 정확
@@ -783,6 +811,7 @@ Frontend:
 ## TASK 15: 배포 설정
 
 ### 프롬프트
+
 ```
 프로덕션 배포 설정을 해줘.
 
@@ -826,6 +855,7 @@ CI/CD (GitHub Actions):
 ```
 
 ### 완료 기준
+
 - [ ] 로컬에서 프로덕션 빌드 성공
 - [ ] Docker 이미지 빌드 성공
 - [ ] 배포 가이드 문서 완성
