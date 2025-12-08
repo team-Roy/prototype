@@ -10,7 +10,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { LoungeService } from './lounge.service';
-import { CreateLoungeDto, UpdateLoungeDto, LoungeListQueryDto, AddManagerDto } from './dto';
+import {
+  CreateLoungeDto,
+  UpdateLoungeDto,
+  LoungeListQueryDto,
+  AddManagerDto,
+  BanUserDto,
+} from './dto';
 import { JwtAuthGuard, OptionalAuthGuard } from '../auth/guards';
 import { CurrentUser, Public } from '../common/decorators';
 import { User } from '@prisma/client';
@@ -87,5 +93,40 @@ export class LoungeController {
     @CurrentUser() user: User
   ) {
     return this.loungeService.removeManager(id, user.id, targetUserId);
+  }
+
+  @Get(':id/members')
+  async getMembers(
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string
+  ) {
+    return this.loungeService.getMembers(
+      id,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20
+    );
+  }
+
+  @Get(':id/bans')
+  @UseGuards(JwtAuthGuard)
+  async getBannedUsers(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.loungeService.getBannedUsers(id, user.id);
+  }
+
+  @Post(':id/bans')
+  @UseGuards(JwtAuthGuard)
+  async banUser(@Param('id') id: string, @CurrentUser() user: User, @Body() dto: BanUserDto) {
+    return this.loungeService.banUser(id, user.id, dto.userId, dto.reason, dto.durationDays);
+  }
+
+  @Delete(':id/bans/:userId')
+  @UseGuards(JwtAuthGuard)
+  async unbanUser(
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+    @CurrentUser() user: User
+  ) {
+    return this.loungeService.unbanUser(id, user.id, targetUserId);
   }
 }

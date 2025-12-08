@@ -496,6 +496,168 @@ export class LoungeService {
     }));
   }
 
+  async banUser(
+    loungeId: string,
+    managerId: string,
+    targetUserId: string,
+    reason?: string,
+    durationDays?: number
+  ) {
+    await this.checkManagerPermission(loungeId, managerId);
+
+    // Can't ban a manager
+    const targetManager = await this.prisma.loungeManager.findUnique({
+      where: {
+        userId_loungeId: { userId: targetUserId, loungeId },
+      },
+    });
+
+    if (targetManager) {
+      throw new BadRequestException('매니저는 차단할 수 없습니다');
+    }
+
+    // Check if already banned
+    const existingBan = await this.prisma.loungeBan.findUnique({
+      where: {
+        userId_loungeId: { userId: targetUserId, loungeId },
+      },
+    });
+
+    if (existingBan) {
+      throw new ConflictException('이미 차단된 사용자입니다');
+    }
+
+    const expiresAt = durationDays
+      ? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)
+      : null;
+
+    await this.prisma.$transaction(async (tx) => {
+      // Create ban
+      await tx.loungeBan.create({
+        data: {
+          userId: targetUserId,
+          loungeId,
+          reason,
+          expiresAt,
+        },
+      });
+
+      // Remove from members if member
+      const membership = await tx.loungeMember.findUnique({
+        where: {
+          userId_loungeId: { userId: targetUserId, loungeId },
+        },
+      });
+
+      if (membership) {
+        await tx.loungeMember.delete({
+          where: {
+            userId_loungeId: { userId: targetUserId, loungeId },
+          },
+        });
+
+        await tx.lounge.update({
+          where: { id: loungeId },
+          data: { memberCount: { decrement: 1 } },
+        });
+      }
+    });
+
+    return { message: '사용자가 차단되었습니다' };
+  }
+
+  async unbanUser(loungeId: string, managerId: string, targetUserId: string) {
+    await this.checkManagerPermission(loungeId, managerId);
+
+    const ban = await this.prisma.loungeBan.findUnique({
+      where: {
+        userId_loungeId: { userId: targetUserId, loungeId },
+      },
+    });
+
+    if (!ban) {
+      throw new NotFoundException('차단된 사용자가 아닙니다');
+    }
+
+    await this.prisma.loungeBan.delete({
+      where: {
+        userId_loungeId: { userId: targetUserId, loungeId },
+      },
+    });
+
+    return { message: '차단이 해제되었습니다' };
+  }
+
+  async getBannedUsers(loungeId: string, managerId: string) {
+    await this.checkManagerPermission(loungeId, managerId);
+
+    const bans = await this.prisma.loungeBan.findMany({
+      where: { loungeId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImage: true,
+          },
+        },
+      },
+      orderBy: { bannedAt: 'desc' },
+    });
+
+    return bans.map((ban) => ({
+      user: ban.user,
+      reason: ban.reason,
+      expiresAt: ban.expiresAt,
+      createdAt: ban.bannedAt,
+    }));
+  }
+
+  async getMembers(loungeId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    const [members, total] = await Promise.all([
+      this.prisma.loungeMember.findMany({
+        where: { loungeId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              nickname: true,
+              profileImage: true,
+            },
+          },
+        },
+        orderBy: { joinedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.loungeMember.count({ where: { loungeId } }),
+    ]);
+
+    // Get managers for role info
+    const managers = await this.prisma.loungeManager.findMany({
+      where: { loungeId },
+      select: { userId: true, role: true },
+    });
+
+    const managerMap = new Map(managers.map((m) => [m.userId, m.role]));
+
+    return {
+      items: members.map((m) => ({
+        ...m.user,
+        joinedAt: m.joinedAt,
+        role: managerMap.get(m.user.id) || null,
+      })),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   // Helper methods
   private async checkManagerPermission(loungeId: string, userId: string) {
     const manager = await this.prisma.loungeManager.findUnique({

@@ -88,9 +88,14 @@ export function LoungeHeader({ lounge, onUpdate }: LoungeHeaderProps) {
         {/* Actions */}
         <div className="flex items-center gap-2">
           {lounge.isManager && (
-            <Button variant="outline" asChild>
-              <Link href={`/lounge/${lounge.slug}/settings`}>설정</Link>
-            </Button>
+            <>
+              <Button variant="outline" asChild>
+                <Link href={`/lounge/${lounge.slug}/manage`}>관리</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href={`/lounge/${lounge.slug}/settings`}>설정</Link>
+              </Button>
+            </>
           )}
           <Button
             onClick={handleJoinLeave}
