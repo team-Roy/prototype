@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 import { VoteTypeEnum } from './dto';
 import { VoteType } from '@prisma/client';
 
@@ -11,12 +12,16 @@ export interface VoteResponse {
 
 @Injectable()
 export class VoteService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService
+  ) {}
 
   async votePost(postId: string, userId: string, type: VoteTypeEnum): Promise<VoteResponse> {
     // Check post exists
     const post = await this.prisma.post.findUnique({
       where: { id: postId, deletedAt: null },
+      select: { id: true, authorId: true, upvoteCount: true },
     });
 
     if (!post) {
@@ -92,6 +97,17 @@ export class VoteService {
           },
         }),
       ]);
+
+      // Send vote notification for upvotes (every 10)
+      if (type === VoteTypeEnum.UPVOTE && post.authorId !== userId) {
+        const newUpvoteCount = post.upvoteCount + 1;
+        await this.notificationService.createVoteNotification(
+          post.authorId,
+          postId,
+          'post',
+          newUpvoteCount
+        );
+      }
 
       return this.getPostVoteStatus(postId, userId);
     }

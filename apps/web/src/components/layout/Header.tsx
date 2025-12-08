@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { SearchBar } from '@/components/search';
+import { NotificationDropdown } from '@/components/notification';
 
 export function Header() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export function Header() {
               <Button variant="ghost" asChild>
                 <Link href="/lounge/create">라운지 만들기</Link>
               </Button>
+              <NotificationDropdown />
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">{user.nickname}</span>
                 <Button variant="outline" size="sm" onClick={handleLogout}>

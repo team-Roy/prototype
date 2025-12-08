@@ -5,11 +5,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 import { CreateCommentDto, UpdateCommentDto, CommentListQueryDto, CommentSortBy } from './dto';
 
 @Injectable()
 export class CommentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService
+  ) {}
 
   async getComments(postId: string, query: CommentListQueryDto) {
     const { sortBy = CommentSortBy.RECENT, page = 1, limit = 50 } = query;
@@ -91,6 +95,9 @@ export class CommentService {
       where: { id: postId, deletedAt: null },
       include: {
         lounge: true,
+        author: {
+          select: { id: true, nickname: true },
+        },
       },
     });
 
@@ -115,9 +122,23 @@ export class CommentService {
     }
 
     // Validate parentId if provided (must be a root comment from same post)
+    let parentComment: {
+      id: string;
+      postId: string;
+      authorId: string;
+      parentId: string | null;
+      isAnonymous: boolean;
+      author: { id: string; nickname: string };
+    } | null = null;
+
     if (dto.parentId) {
-      const parentComment = await this.prisma.comment.findUnique({
+      parentComment = await this.prisma.comment.findUnique({
         where: { id: dto.parentId, deletedAt: null },
+        include: {
+          author: {
+            select: { id: true, nickname: true },
+          },
+        },
       });
 
       if (!parentComment) {
@@ -133,6 +154,12 @@ export class CommentService {
         throw new BadRequestException('대댓글에는 답글을 달 수 없습니다');
       }
     }
+
+    // Get current user info
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { nickname: true },
+    });
 
     // Create comment and update post comment count
     const [comment] = await this.prisma.$transaction([
@@ -161,6 +188,32 @@ export class CommentService {
         },
       }),
     ]);
+
+    // Create notifications
+    const commenterNickname = currentUser?.nickname || '알 수 없음';
+    const isAnonymous = dto.isAnonymous ?? false;
+
+    if (parentComment) {
+      // Reply notification to parent comment author
+      if (parentComment.authorId !== userId) {
+        await this.notificationService.createReplyNotification(
+          parentComment.authorId,
+          postId,
+          commenterNickname,
+          isAnonymous
+        );
+      }
+    } else {
+      // Comment notification to post author
+      if (post.authorId !== userId) {
+        await this.notificationService.createCommentNotification(
+          post.authorId,
+          postId,
+          commenterNickname,
+          isAnonymous
+        );
+      }
+    }
 
     return this.formatComment(comment);
   }
