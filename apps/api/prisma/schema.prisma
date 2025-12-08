@@ -1,0 +1,442 @@
+// Prisma Schema for 팬덤 라운지
+// apps/api/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  KAKAO
+  GOOGLE
+}
+
+enum ManagerRole {
+  OWNER
+  MANAGER
+}
+
+enum PostType {
+  TEXT
+  IMAGE
+  VIDEO
+  CLIP
+  FANART
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+enum Platform {
+  YOUTUBE
+  TWITCH
+  AFREECA
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
+}
+
+enum NotificationType {
+  COMMENT       // 내 게시물에 댓글
+  REPLY         // 내 댓글에 대댓글
+  VOTE          // 추천 (10개 단위)
+  MENTION       // 멘션
+  LOUNGE_NOTICE // 라운지 공지
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+// ============================================
+// USER
+// ============================================
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  password      String?      // null for social login
+  nickname      String       @unique
+  profileImage  String?
+  bio           String?
+
+  provider      AuthProvider @default(LOCAL)
+  providerId    String?      // Social login ID
+  role          UserRole     @default(USER)
+
+  isActive      Boolean      @default(true)
+  lastLoginAt   DateTime?
+
+  // Relations
+  loungesCreated    Lounge[]          @relation("LoungeCreator")
+  loungeManagers    LoungeManager[]
+  loungeMemberships LoungeMember[]
+  posts             Post[]
+  comments          Comment[]
+  votes             Vote[]
+  notifications     Notification[]
+  reports           Report[]          @relation("Reporter")
+  loungeBans        LoungeBan[]
+  refreshTokens     RefreshToken[]
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  @@index([email])
+  @@index([nickname])
+  @@index([provider, providerId])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ============================================
+// LOUNGE (커뮤니티)
+// ============================================
+
+model Lounge {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  slug         String   @unique  // URL용 (예: ive-lounge)
+  description  String?
+  rules        String?  // 마크다운 형식 규칙
+
+  coverImage   String?
+  icon         String?
+
+  isOfficial   Boolean  @default(false)  // 공식 인증
+  isActive     Boolean  @default(true)
+
+  // Cached counts (for performance)
+  memberCount  Int      @default(0)
+  postCount    Int      @default(0)
+
+  // Creator
+  creatorId    String
+  creator      User     @relation("LoungeCreator", fields: [creatorId], references: [id])
+
+  // Relations
+  managers     LoungeManager[]
+  members      LoungeMember[]
+  posts        Post[]
+  bans         LoungeBan[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([slug])
+  @@index([name])
+  @@index([creatorId])
+  @@index([memberCount(sort: Desc)])
+  @@map("lounges")
+}
+
+model LoungeManager {
+  userId    String
+  loungeId  String
+  role      ManagerRole @default(MANAGER)
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lounge    Lounge      @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime    @default(now())
+
+  @@id([userId, loungeId])
+  @@index([loungeId])
+  @@map("lounge_managers")
+}
+
+model LoungeMember {
+  userId    String
+  loungeId  String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lounge    Lounge   @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+
+  joinedAt  DateTime @default(now())
+
+  @@id([userId, loungeId])
+  @@index([loungeId])
+  @@map("lounge_members")
+}
+
+model LoungeBan {
+  id        String   @id @default(cuid())
+  userId    String
+  loungeId  String
+  reason    String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lounge    Lounge   @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+
+  bannedAt  DateTime @default(now())
+  expiresAt DateTime? // null = permanent
+
+  @@unique([userId, loungeId])
+  @@index([loungeId])
+  @@map("lounge_bans")
+}
+
+// ============================================
+// POST
+// ============================================
+
+model Post {
+  id          String    @id @default(cuid())
+  loungeId    String
+  authorId    String
+
+  type        PostType  @default(TEXT)
+  title       String?
+  content     String
+
+  isAnonymous Boolean   @default(false)
+  isPinned    Boolean   @default(false)
+  isNotice    Boolean   @default(false)
+
+  // Cached counts
+  viewCount     Int     @default(0)
+  upvoteCount   Int     @default(0)
+  downvoteCount Int     @default(0)
+  commentCount  Int     @default(0)
+
+  // Relations
+  lounge      Lounge      @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+  author      User        @relation(fields: [authorId], references: [id])
+
+  media       PostMedia[]
+  tags        PostTag[]
+  clipInfo    ClipInfo?
+  comments    Comment[]
+  votes       Vote[]
+  reports     Report[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+
+  @@index([loungeId, createdAt(sort: Desc)])
+  @@index([loungeId, upvoteCount(sort: Desc)])
+  @@index([authorId])
+  @@index([type])
+  @@map("posts")
+}
+
+model PostMedia {
+  id           String    @id @default(cuid())
+  postId       String
+
+  type         MediaType
+  url          String
+  thumbnailUrl String?
+
+  width        Int?
+  height       Int?
+  duration     Int?      // seconds for video
+  fileSize     Int?      // bytes
+
+  order        Int       @default(0)
+
+  post         Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime  @default(now())
+
+  @@index([postId])
+  @@map("post_media")
+}
+
+model PostTag {
+  id       String @id @default(cuid())
+  postId   String
+  tag      String
+
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, tag])
+  @@index([tag])
+  @@map("post_tags")
+}
+
+model ClipInfo {
+  postId       String   @id
+
+  sourceUrl    String   // 원본 영상 URL
+  platform     Platform
+  videoId      String   // 플랫폼별 영상 ID
+
+  startTime    Int?     // seconds
+  endTime      Int?     // seconds
+
+  creatorName  String?  // 원본 크리에이터 이름
+
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("clip_info")
+}
+
+// ============================================
+// COMMENT
+// ============================================
+
+model Comment {
+  id          String    @id @default(cuid())
+  postId      String
+  authorId    String
+  parentId    String?   // 대댓글
+
+  content     String
+  isAnonymous Boolean   @default(false)
+
+  // Cached counts
+  upvoteCount   Int     @default(0)
+  downvoteCount Int     @default(0)
+
+  // Relations
+  post        Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author      User      @relation(fields: [authorId], references: [id])
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     Comment[] @relation("CommentReplies")
+  votes       Vote[]
+  reports     Report[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([postId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// ============================================
+// VOTE
+// ============================================
+
+model Vote {
+  id         String    @id @default(cuid())
+  userId     String
+  postId     String?
+  commentId  String?
+
+  type       VoteType
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post       Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment    Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime  @default(now())
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@index([postId])
+  @@index([commentId])
+  @@map("votes")
+}
+
+// ============================================
+// NOTIFICATION
+// ============================================
+
+model Notification {
+  id            String           @id @default(cuid())
+  userId        String
+
+  type          NotificationType
+  message       String
+
+  // Reference to the related entity
+  referenceId   String?          // postId, commentId, etc.
+  referenceType String?          // "post", "comment", etc.
+
+  isRead        Boolean          @default(false)
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime         @default(now())
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ============================================
+// REPORT (신고)
+// ============================================
+
+model Report {
+  id           String       @id @default(cuid())
+  reporterId   String
+
+  postId       String?
+  commentId    String?
+
+  reason       String
+  description  String?
+
+  status       ReportStatus @default(PENDING)
+  resolvedAt   DateTime?
+  resolvedBy   String?
+
+  reporter     User         @relation("Reporter", fields: [reporterId], references: [id])
+  post         Post?        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment      Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime     @default(now())
+
+  @@index([status])
+  @@index([postId])
+  @@index([commentId])
+  @@map("reports")
+}
+
+// ============================================
+// SEARCH & ANALYTICS (Optional - for later)
+// ============================================
+
+// 인기 태그 캐시 (선택사항)
+model PopularTag {
+  id        String   @id @default(cuid())
+  loungeId  String?  // null = global
+  tag       String
+  count     Int
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([loungeId, tag])
+  @@index([count(sort: Desc)])
+  @@map("popular_tags")
+}
