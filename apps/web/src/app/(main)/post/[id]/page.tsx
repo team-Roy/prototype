@@ -7,6 +7,7 @@ import { postApi, PostDetailResponse } from '@/lib/post';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { CommentList } from '@/components/comment';
 import { formatRelativeTime, formatNumber } from '@fandom/shared';
 
 export default function PostDetailPage() {
@@ -195,11 +196,10 @@ export default function PostDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Comments Section (placeholder - will be implemented in TASK 9) */}
+      {/* Comments Section */}
       <Card className="mt-4">
-        <CardContent className="p-6 text-center text-muted-foreground">
-          <p>댓글 기능이 여기에 표시됩니다</p>
-          <p className="text-sm mt-1">(댓글 시스템은 다음 태스크에서 구현됩니다)</p>
+        <CardContent className="p-6">
+          <CommentList postId={post.id} />
         </CardContent>
       </Card>
     </div>

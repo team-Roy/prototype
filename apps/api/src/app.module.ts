@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { LoungeModule } from './lounge/lounge.module';
 import { PostModule } from './post/post.module';
+import { CommentModule } from './comment/comment.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor } from './common/interceptors';
 
@@ -44,6 +45,7 @@ import { TransformInterceptor } from './common/interceptors';
     UserModule,
     LoungeModule,
     PostModule,
+    CommentModule,
   ],
   providers: [
     {
