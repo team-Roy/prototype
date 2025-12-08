@@ -9,6 +9,7 @@ import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { LoungeModule } from './lounge/lounge.module';
+import { PostModule } from './post/post.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor } from './common/interceptors';
 
@@ -42,6 +43,7 @@ import { TransformInterceptor } from './common/interceptors';
     AuthModule,
     UserModule,
     LoungeModule,
+    PostModule,
   ],
   providers: [
     {
