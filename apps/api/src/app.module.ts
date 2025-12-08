@@ -12,6 +12,7 @@ import { LoungeModule } from './lounge/lounge.module';
 import { PostModule } from './post/post.module';
 import { CommentModule } from './comment/comment.module';
 import { MediaModule } from './media/media.module';
+import { VoteModule } from './vote/vote.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor } from './common/interceptors';
 
@@ -48,6 +49,7 @@ import { TransformInterceptor } from './common/interceptors';
     PostModule,
     CommentModule,
     MediaModule,
+    VoteModule,
   ],
   providers: [
     {

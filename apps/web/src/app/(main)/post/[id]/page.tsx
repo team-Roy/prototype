@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CommentList } from '@/components/comment';
+import { VoteButtons } from '@/components/vote';
 import { formatRelativeTime, formatNumber } from '@fandom/shared';
 
 export default function PostDetailPage() {
@@ -162,15 +163,13 @@ export default function PostDetailPage() {
           {/* Stats & Actions */}
           <div className="flex items-center justify-between border-t pt-4">
             <div className="flex items-center gap-4">
-              {/* Vote Buttons (placeholder - will be implemented in TASK 11) */}
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  👍 {formatNumber(post.upvoteCount)}
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  👎 {formatNumber(post.downvoteCount)}
-                </Button>
-              </div>
+              <VoteButtons
+                type="post"
+                targetId={post.id}
+                initialUpvotes={post.upvoteCount}
+                initialDownvotes={post.downvoteCount}
+                size="sm"
+              />
               <span className="text-sm text-muted-foreground">
                 댓글 {formatNumber(post.commentCount)}
               </span>
