@@ -7,8 +7,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { loungeApi, LoungeDetailResponse } from '@/lib/lounge';
 import { postApi, PostType } from '@/lib/post';
+import { MediaInfo } from '@/lib/media';
 import { useRequireAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { MediaUploader } from '@/components/media';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +46,7 @@ export default function WritePostPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadedMedia, setUploadedMedia] = useState<MediaInfo[]>([]);
 
   const {
     register,
@@ -186,6 +189,36 @@ export default function WritePostPage() {
                 <p className="text-sm text-destructive">{errors.content.message}</p>
               )}
             </div>
+
+            {/* Media Upload */}
+            {(selectedType === 'IMAGE' || selectedType === 'FANART') && (
+              <div className="space-y-2">
+                <Label>이미지 업로드</Label>
+                <MediaUploader
+                  maxFiles={10}
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onUploadComplete={(media) => setUploadedMedia((prev) => [...prev, ...media])}
+                />
+                {uploadedMedia.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 mt-2">
+                    {uploadedMedia.map((media, index) => (
+                      <div key={index} className="relative aspect-square rounded overflow-hidden">
+                        <img src={media.url} alt="" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setUploadedMedia((prev) => prev.filter((_, i) => i !== index))
+                          }
+                          className="absolute top-1 right-1 w-5 h-5 bg-black/50 text-white rounded-full text-xs"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Tags */}
             <div className="space-y-2">

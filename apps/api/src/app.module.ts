@@ -11,6 +11,7 @@ import { UserModule } from './user/user.module';
 import { LoungeModule } from './lounge/lounge.module';
 import { PostModule } from './post/post.module';
 import { CommentModule } from './comment/comment.module';
+import { MediaModule } from './media/media.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor } from './common/interceptors';
 
@@ -46,6 +47,7 @@ import { TransformInterceptor } from './common/interceptors';
     LoungeModule,
     PostModule,
     CommentModule,
+    MediaModule,
   ],
   providers: [
     {
