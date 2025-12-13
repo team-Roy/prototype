@@ -222,15 +222,19 @@ describe('Fandom Lounge E2E Tests', () => {
       expect(response.body.data).toHaveProperty('id');
       expect(response.body.data).toHaveProperty('name', testLounge.name);
       expect(response.body.data).toHaveProperty('slug');
-      expect(response.body.data).toHaveProperty('creatorId', userId);
+      // creator 객체로 반환됨
+      expect(response.body.data).toHaveProperty('creator');
+      expect(response.body.data.creator).toHaveProperty('id', userId);
 
       loungeId = response.body.data.id;
       loungeSlug = response.body.data.slug;
     });
 
     it('GET /api/lounges/:slug - 라운지 조회 (공개)', async () => {
+      // slug는 한글이 포함되어 있으므로 URL 인코딩이 필요
+      const encodedSlug = encodeURIComponent(loungeSlug);
       const response = await request(app.getHttpServer())
-        .get(`/api/lounges/${loungeSlug}`)
+        .get(`/api/lounges/${encodedSlug}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -268,16 +272,24 @@ describe('Fandom Lounge E2E Tests', () => {
       const response = await request(app.getHttpServer())
         .post(`/api/lounges/${loungeId}/posts`)
         .set('Authorization', `Bearer ${accessToken}`)
-        .send(testPost)
-        .expect(201);
+        .send(testPost);
 
+      // 디버깅용 - 실패시 응답 확인
+      if (response.status !== 201) {
+        console.log('Post creation failed:', response.status, response.body);
+        console.log('loungeId:', loungeId, 'userId:', userId);
+      }
+
+      // postId를 먼저 할당 (이후 테스트에서 사용하기 위해)
+      postId = response.body.data?.id;
+
+      expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('id');
       expect(response.body.data).toHaveProperty('title', testPost.title);
-      expect(response.body.data).toHaveProperty('authorId', userId);
-      expect(response.body.data).toHaveProperty('loungeId', loungeId);
-
-      postId = response.body.data.id;
+      // author 객체로 반환됨
+      expect(response.body.data).toHaveProperty('author');
+      expect(response.body.data.author).toHaveProperty('id', userId);
     });
 
     it('GET /api/posts/:id - 게시글 조회', async () => {

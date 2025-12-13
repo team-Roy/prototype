@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -14,10 +6,12 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser, Public } from '../common/decorators';
 
-interface JwtPayload {
-  sub: string;
+interface AuthenticatedUser {
+  id: string;
   email: string;
+  nickname: string;
   role: string;
+  isActive: boolean;
 }
 
 @Controller('auth')
@@ -48,16 +42,16 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
     @Body('refreshToken') refreshToken?: string
   ) {
-    await this.authService.logout(user.sub, refreshToken);
+    await this.authService.logout(user.id, refreshToken);
     return { message: '로그아웃 되었습니다.' };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getMe(@CurrentUser() user: JwtPayload) {
-    return this.authService.getMe(user.sub);
+  async getMe(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.getMe(user.id);
   }
 }

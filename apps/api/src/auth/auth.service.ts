@@ -61,7 +61,8 @@ export class AuthService {
       });
     }
 
-    const rounds = this.configService.get<number>('BCRYPT_ROUNDS') || 12;
+    const roundsStr = this.configService.get<string>('BCRYPT_ROUNDS');
+    const rounds = roundsStr ? parseInt(roundsStr, 10) : 12;
     const hashedPassword = await bcrypt.hash(dto.password, rounds);
 
     const user = await this.prisma.user.create({
