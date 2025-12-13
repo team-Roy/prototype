@@ -50,24 +50,24 @@ export interface UpdateCommentData {
 
 export const commentApi = {
   getList: async (postId: string, params?: CommentListParams) => {
-    const response = await api.get<CommentListResponse>(`/posts/${postId}/comments`, {
+    const response = await api.get<{ data: CommentListResponse }>(`/posts/${postId}/comments`, {
       params,
     });
-    return response.data;
+    return response.data.data;
   },
 
   create: async (postId: string, data: CreateCommentData) => {
-    const response = await api.post<CommentResponse>(`/posts/${postId}/comments`, data);
-    return response.data;
+    const response = await api.post<{ data: CommentResponse }>(`/posts/${postId}/comments`, data);
+    return response.data.data;
   },
 
   update: async (commentId: string, data: UpdateCommentData) => {
-    const response = await api.patch<CommentResponse>(`/comments/${commentId}`, data);
-    return response.data;
+    const response = await api.patch<{ data: CommentResponse }>(`/comments/${commentId}`, data);
+    return response.data.data;
   },
 
   delete: async (commentId: string) => {
-    const response = await api.delete<{ success: boolean }>(`/comments/${commentId}`);
-    return response.data;
+    const response = await api.delete<{ data: { message: string } }>(`/comments/${commentId}`);
+    return response.data.data;
   },
 };

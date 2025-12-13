@@ -37,13 +37,13 @@ export interface MediaInfo {
 
 export const mediaApi = {
   getPresignedUrl: async (data: PresignedUrlRequest) => {
-    const response = await api.post<PresignedUrlResponse>('/media/presigned-url', data);
-    return response.data;
+    const response = await api.post<{ data: PresignedUrlResponse }>('/media/presigned-url', data);
+    return response.data.data;
   },
 
   completeUpload: async (data: CompleteUploadRequest) => {
-    const response = await api.post<MediaInfo>('/media/complete', data);
-    return response.data;
+    const response = await api.post<{ data: MediaInfo }>('/media/complete', data);
+    return response.data.data;
   },
 };
 

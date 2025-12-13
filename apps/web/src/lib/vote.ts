@@ -10,12 +10,14 @@ export interface VoteResponse {
 
 export const voteApi = {
   votePost: async (postId: string, type: VoteType) => {
-    const response = await api.post<VoteResponse>(`/posts/${postId}/vote`, { type });
-    return response.data;
+    const response = await api.post<{ data: VoteResponse }>(`/posts/${postId}/vote`, { type });
+    return response.data.data;
   },
 
   voteComment: async (commentId: string, type: VoteType) => {
-    const response = await api.post<VoteResponse>(`/comments/${commentId}/vote`, { type });
-    return response.data;
+    const response = await api.post<{ data: VoteResponse }>(`/comments/${commentId}/vote`, {
+      type,
+    });
+    return response.data.data;
   },
 };

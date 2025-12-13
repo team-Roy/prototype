@@ -48,13 +48,13 @@ export interface SearchParams {
 
 export const searchApi = {
   search: async (params: SearchParams) => {
-    const response = await api.get<SearchResponse>('/search', { params });
-    return response.data;
+    const response = await api.get<{ data: SearchResponse }>('/search', { params });
+    return response.data.data;
   },
 
   getTags: async (q?: string) => {
-    const response = await api.get<string[]>('/search/tags', { params: { q } });
-    return response.data;
+    const response = await api.get<{ data: string[] }>('/search/tags', { params: { q } });
+    return response.data.data;
   },
 };
 

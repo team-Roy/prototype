@@ -41,8 +41,8 @@ export interface AdminLounge {
 
 export const adminApi = {
   getStats: async () => {
-    const response = await api.get<AdminStats>('/admin/stats');
-    return response.data;
+    const response = await api.get<{ data: AdminStats }>('/admin/stats');
+    return response.data.data;
   },
 
   getUsers: async (params?: {
@@ -53,15 +53,19 @@ export const adminApi = {
     limit?: number;
   }) => {
     const response = await api.get<{
-      items: AdminUser[];
-      meta: { total: number; page: number; limit: number; totalPages: number };
+      data: {
+        items: AdminUser[];
+        meta: { total: number; page: number; limit: number; totalPages: number };
+      };
     }>('/admin/users', { params });
-    return response.data;
+    return response.data.data;
   },
 
   toggleUserActive: async (id: string) => {
-    const response = await api.post(`/admin/users/${id}/toggle-active`);
-    return response.data;
+    const response = await api.post<{ data: { message: string } }>(
+      `/admin/users/${id}/toggle-active`
+    );
+    return response.data.data;
   },
 
   getLounges: async (params?: {
@@ -72,20 +76,22 @@ export const adminApi = {
     limit?: number;
   }) => {
     const response = await api.get<{
-      items: AdminLounge[];
-      meta: { total: number; page: number; limit: number; totalPages: number };
+      data: {
+        items: AdminLounge[];
+        meta: { total: number; page: number; limit: number; totalPages: number };
+      };
     }>('/admin/lounges', { params });
-    return response.data;
+    return response.data.data;
   },
 
   verifyLounge: async (id: string) => {
-    const response = await api.post(`/admin/lounges/${id}/verify`);
-    return response.data;
+    const response = await api.post<{ data: { message: string } }>(`/admin/lounges/${id}/verify`);
+    return response.data.data;
   },
 
   unverifyLounge: async (id: string) => {
-    const response = await api.delete(`/admin/lounges/${id}/verify`);
-    return response.data;
+    const response = await api.delete<{ data: { message: string } }>(`/admin/lounges/${id}/verify`);
+    return response.data.data;
   },
 };
 
@@ -112,24 +118,32 @@ export interface LoungeMember {
 export const loungeManageApi = {
   getMembers: async (loungeId: string, page?: number, limit?: number) => {
     const response = await api.get<{
-      items: LoungeMember[];
-      meta: { total: number; page: number; limit: number; totalPages: number };
+      data: {
+        items: LoungeMember[];
+        meta: { total: number; page: number; limit: number; totalPages: number };
+      };
     }>(`/lounges/${loungeId}/members`, { params: { page, limit } });
-    return response.data;
+    return response.data.data;
   },
 
   getBannedUsers: async (loungeId: string) => {
-    const response = await api.get<BannedUser[]>(`/lounges/${loungeId}/bans`);
-    return response.data;
+    const response = await api.get<{ data: BannedUser[] }>(`/lounges/${loungeId}/bans`);
+    return response.data.data;
   },
 
   banUser: async (loungeId: string, userId: string, reason?: string, durationDays?: number) => {
-    const response = await api.post(`/lounges/${loungeId}/bans`, { userId, reason, durationDays });
-    return response.data;
+    const response = await api.post<{ data: { message: string } }>(`/lounges/${loungeId}/bans`, {
+      userId,
+      reason,
+      durationDays,
+    });
+    return response.data.data;
   },
 
   unbanUser: async (loungeId: string, userId: string) => {
-    const response = await api.delete(`/lounges/${loungeId}/bans/${userId}`);
-    return response.data;
+    const response = await api.delete<{ data: { message: string } }>(
+      `/lounges/${loungeId}/bans/${userId}`
+    );
+    return response.data.data;
   },
 };
