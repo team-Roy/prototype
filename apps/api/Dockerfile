@@ -45,7 +45,7 @@ RUN adduser --system --uid 1001 nestjs
 # Copy necessary files
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/package.json ./
-COPY --from=builder /app/apps/api/node_modules ./node_modules
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/prisma ./prisma
 
 # Set ownership
