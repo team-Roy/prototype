@@ -33,35 +33,36 @@ RUN npx prisma generate
 WORKDIR /app
 RUN pnpm --filter @fandom/api build
 
-# Production stage - keep same structure
+# Production stage
 FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+# Install production dependencies directly with npm
+COPY apps/api/package.json ./
+
+# Copy built files
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/apps/api/prisma ./prisma
+
+# Copy shared package dist
+COPY --from=builder /app/packages/shared/dist ./node_modules/@fandom/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./node_modules/@fandom/shared/
+
+# Copy Prisma client from builder
+COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/node_modules/.pnpm/prisma@*/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/.pnpm/@prisma+engines@*/node_modules/@prisma/engines ./node_modules/@prisma/engines
+
+# Install production dependencies
+RUN npm install --omit=dev --ignore-scripts
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
-
-# Copy entire workspace (pnpm needs the structure)
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/pnpm-lock.yaml ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/package.json ./apps/api/
-COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
-COPY --from=builder /app/packages/shared/package.json ./packages/shared/
-
-# Set ownership
-RUN chown -R nestjs:nodejs /app
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs && \
+    chown -R nestjs:nodejs /app
 
 USER nestjs
-
-WORKDIR /app/apps/api
 
 # Railway uses PORT env variable
 ENV PORT=3001
