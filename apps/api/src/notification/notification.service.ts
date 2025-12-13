@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationListQueryDto } from './dto';
 import { NotificationType } from '@prisma/client';
@@ -13,6 +13,8 @@ export interface CreateNotificationDto {
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(userId: string, query: NotificationListQueryDto) {
@@ -24,58 +26,89 @@ export class NotificationService {
       ...(unreadOnly && { isRead: false }),
     };
 
-    const [items, total] = await Promise.all([
-      this.prisma.notification.findMany({
-        where,
-        orderBy: [{ isRead: 'asc' }, { createdAt: 'desc' }],
-        skip,
-        take: limit,
-      }),
-      this.prisma.notification.count({ where }),
-    ]);
+    try {
+      const [items, total] = await Promise.all([
+        this.prisma.notification.findMany({
+          where,
+          orderBy: [{ isRead: 'asc' }, { createdAt: 'desc' }],
+          skip,
+          take: limit,
+        }),
+        this.prisma.notification.count({ where }),
+      ]);
 
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+      return {
+        items,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch notifications:', error);
+      return {
+        items: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
+    }
   }
 
   async getUnreadCount(userId: string): Promise<number> {
-    return this.prisma.notification.count({
-      where: {
-        userId,
-        isRead: false,
-      },
-    });
+    try {
+      return await this.prisma.notification.count({
+        where: {
+          userId,
+          isRead: false,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to get unread count:', error);
+      return 0;
+    }
   }
 
   async markAsRead(id: string, userId: string) {
-    return this.prisma.notification.updateMany({
-      where: { id, userId },
-      data: { isRead: true },
-    });
+    try {
+      return await this.prisma.notification.updateMany({
+        where: { id, userId },
+        data: { isRead: true },
+      });
+    } catch (error) {
+      this.logger.error('Failed to mark notification as read:', error);
+      return { count: 0 };
+    }
   }
 
   async markAllAsRead(userId: string) {
-    return this.prisma.notification.updateMany({
-      where: { userId, isRead: false },
-      data: { isRead: true },
-    });
+    try {
+      return await this.prisma.notification.updateMany({
+        where: { userId, isRead: false },
+        data: { isRead: true },
+      });
+    } catch (error) {
+      this.logger.error('Failed to mark all notifications as read:', error);
+      return { count: 0 };
+    }
   }
 
   async create(data: CreateNotificationDto) {
-    return this.prisma.notification.create({
-      data: {
-        userId: data.userId,
-        type: data.type,
-        message: data.message,
-        referenceId: data.referenceId,
-        referenceType: data.referenceType,
-      },
-    });
+    try {
+      return await this.prisma.notification.create({
+        data: {
+          userId: data.userId,
+          type: data.type,
+          message: data.message,
+          referenceId: data.referenceId,
+          referenceType: data.referenceType,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to create notification:', error);
+      return null;
+    }
   }
 
   async createCommentNotification(
@@ -142,14 +175,24 @@ export class NotificationService {
   }
 
   async delete(id: string, userId: string) {
-    return this.prisma.notification.deleteMany({
-      where: { id, userId },
-    });
+    try {
+      return await this.prisma.notification.deleteMany({
+        where: { id, userId },
+      });
+    } catch (error) {
+      this.logger.error('Failed to delete notification:', error);
+      return { count: 0 };
+    }
   }
 
   async deleteAll(userId: string) {
-    return this.prisma.notification.deleteMany({
-      where: { userId },
-    });
+    try {
+      return await this.prisma.notification.deleteMany({
+        where: { userId },
+      });
+    } catch (error) {
+      this.logger.error('Failed to delete all notifications:', error);
+      return { count: 0 };
+    }
   }
 }
