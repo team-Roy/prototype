@@ -33,8 +33,11 @@ RUN npx prisma generate
 WORKDIR /app
 RUN pnpm --filter @fandom/api build
 
-# Prune dev dependencies
-RUN pnpm prune --prod
+# Remove source files and unnecessary packages to reduce image size
+# Keep node_modules intact to preserve workspace symlinks
+RUN rm -rf apps/api/src apps/api/test packages/shared/src && \
+    rm -rf apps/api/node_modules/.cache packages/shared/node_modules/.cache && \
+    rm -rf .git
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
