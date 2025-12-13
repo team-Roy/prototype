@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { SearchBar } from '@/components/search';
 import { NotificationDropdown } from '@/components/notification';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function Header() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export function Header() {
 
         {/* User Menu */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <ThemeToggle />
           {isAuthenticated && user ? (
             <>
               <Button variant="ghost" size="sm" className="hidden md:flex" asChild>
