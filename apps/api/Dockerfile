@@ -1,5 +1,5 @@
-# Build stage
-FROM node:20-alpine AS builder
+# Single stage build to avoid pnpm/npm compatibility issues
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ COPY package.json pnpm-lock.yaml ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install dependencies
+# Install all dependencies (including dev for build)
 RUN pnpm install --frozen-lockfile
 
 # Copy source files
@@ -33,29 +33,8 @@ RUN npx prisma generate
 WORKDIR /app
 RUN pnpm --filter @fandom/api build
 
-# Production stage
-FROM node:20-alpine AS runner
-
-WORKDIR /app
-
-# Install production dependencies directly with npm
-COPY apps/api/package.json ./
-
-# Copy built files
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/apps/api/prisma ./prisma
-
-# Copy shared package dist
-COPY --from=builder /app/packages/shared/dist ./node_modules/@fandom/shared/dist
-COPY --from=builder /app/packages/shared/package.json ./node_modules/@fandom/shared/
-
-# Copy Prisma client from builder
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client ./node_modules/@prisma/client
-COPY --from=builder /app/node_modules/.pnpm/prisma@*/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/.pnpm/@prisma+engines@*/node_modules/@prisma/engines ./node_modules/@prisma/engines
-
-# Install production dependencies
-RUN npm install --omit=dev --ignore-scripts
+# Prune dev dependencies
+RUN pnpm prune --prod
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
@@ -63,6 +42,8 @@ RUN addgroup --system --gid 1001 nodejs && \
     chown -R nestjs:nodejs /app
 
 USER nestjs
+
+WORKDIR /app/apps/api
 
 # Railway uses PORT env variable
 ENV PORT=3001
