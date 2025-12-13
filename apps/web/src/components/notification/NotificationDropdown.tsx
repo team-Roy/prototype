@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   notificationApi,
   Notification,
-  getNotificationIcon,
+  NotificationIcon,
   getNotificationLink,
 } from '@/lib/notification';
 import { formatRelativeTime } from '@fandom/shared';
@@ -94,7 +95,7 @@ export function NotificationDropdown() {
   return (
     <div ref={containerRef} className="relative">
       <Button variant="ghost" size="sm" className="relative" onClick={handleOpen} aria-label="알림">
-        <span className="text-lg">🔔</span>
+        <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -137,7 +138,10 @@ export function NotificationDropdown() {
                     }}
                   >
                     <div className="flex items-start gap-3">
-                      <span className="text-xl">{getNotificationIcon(notification.type)}</span>
+                      <NotificationIcon
+                        type={notification.type}
+                        className="w-5 h-5 mt-0.5 text-muted-foreground"
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm line-clamp-2">{notification.message}</p>
                         <p className="text-xs text-muted-foreground mt-1">

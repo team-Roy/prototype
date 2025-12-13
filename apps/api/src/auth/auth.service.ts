@@ -121,7 +121,7 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(refreshToken: string): Promise<TokenResponse> {
+  async refreshTokens(refreshToken: string): Promise<{ user: AuthUser; tokens: TokenResponse }> {
     // Verify refresh token exists in DB
     const tokenRecord = await this.prisma.refreshToken.findUnique({
       where: { token: refreshToken },
@@ -158,8 +158,12 @@ export class AuthService {
       where: { id: tokenRecord.id },
     });
 
-    // Generate new tokens
-    return this.generateTokens(tokenRecord.user);
+    // Generate new tokens and return with user info
+    const tokens = await this.generateTokens(tokenRecord.user);
+    return {
+      user: this.sanitizeUser(tokenRecord.user),
+      tokens,
+    };
   }
 
   async logout(userId: string, refreshToken?: string): Promise<void> {

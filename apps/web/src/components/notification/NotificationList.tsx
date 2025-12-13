@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   notificationApi,
   Notification,
-  getNotificationIcon,
+  NotificationIcon,
   getNotificationLink,
 } from '@/lib/notification';
 import { formatRelativeTime } from '@fandom/shared';
@@ -110,7 +110,10 @@ export function NotificationList() {
               >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
-                    <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
+                    <NotificationIcon
+                      type={notification.type}
+                      className="w-6 h-6 text-muted-foreground"
+                    />
                     <div className="flex-1 min-w-0">
                       {link ? (
                         <Link

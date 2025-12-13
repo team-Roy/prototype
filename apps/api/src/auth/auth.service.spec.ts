@@ -372,15 +372,18 @@ describe('AuthService', () => {
       user: mockUser,
     };
 
-    it('should refresh tokens successfully', async () => {
+    it('should refresh tokens successfully and return user info', async () => {
       mockPrismaService.refreshToken.findUnique.mockResolvedValue(mockRefreshToken);
       mockPrismaService.refreshToken.delete.mockResolvedValue({});
       mockPrismaService.refreshToken.create.mockResolvedValue({});
 
       const result = await service.refreshTokens('refresh-token');
 
-      expect(result.accessToken).toBeDefined();
-      expect(result.refreshToken).toBeDefined();
+      expect(result.user).toBeDefined();
+      expect(result.user.id).toBe(mockUser.id);
+      expect(result.user.email).toBe(mockUser.email);
+      expect(result.tokens.accessToken).toBeDefined();
+      expect(result.tokens.refreshToken).toBeDefined();
     });
 
     it('should throw UnauthorizedException for invalid refresh token', async () => {

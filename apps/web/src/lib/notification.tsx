@@ -1,3 +1,4 @@
+import { MessageCircle, Reply, ThumbsUp, AtSign, Megaphone, Bell } from 'lucide-react';
 import { api } from './api';
 
 export type NotificationType = 'COMMENT' | 'REPLY' | 'VOTE' | 'MENTION' | 'LOUNGE_NOTICE';
@@ -70,20 +71,27 @@ export const notificationApi = {
   },
 };
 
-export function getNotificationIcon(type: NotificationType): string {
+interface NotificationIconProps {
+  type: NotificationType;
+  className?: string;
+}
+
+export function NotificationIcon({ type, className }: NotificationIconProps) {
+  const iconProps = { className };
+
   switch (type) {
     case 'COMMENT':
-      return '💬';
+      return <MessageCircle {...iconProps} />;
     case 'REPLY':
-      return '↩️';
+      return <Reply {...iconProps} />;
     case 'VOTE':
-      return '👍';
+      return <ThumbsUp {...iconProps} />;
     case 'MENTION':
-      return '@';
+      return <AtSign {...iconProps} />;
     case 'LOUNGE_NOTICE':
-      return '📢';
+      return <Megaphone {...iconProps} />;
     default:
-      return '🔔';
+      return <Bell {...iconProps} />;
   }
 }
 

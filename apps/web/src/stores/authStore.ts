@@ -51,17 +51,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
 
-      const refreshResponse = await api.post<{ data: TokenResponse }>('/auth/refresh', {
+      // refresh API now returns user info along with tokens - no need for separate /me call
+      const refreshResponse = await api.post<{
+        data: { user: AuthUser; tokens: TokenResponse };
+      }>('/auth/refresh', {
         refreshToken,
       });
 
-      const { accessToken, refreshToken: newRefreshToken } = refreshResponse.data.data;
-      setAccessToken(accessToken);
-      localStorage.setItem('refreshToken', newRefreshToken);
+      const { user, tokens } = refreshResponse.data.data;
+      setAccessToken(tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
 
-      const meResponse = await api.get<{ data: AuthUser }>('/auth/me');
       set({
-        user: meResponse.data.data,
+        user,
         isAuthenticated: true,
         isInitialized: true,
         isLoading: false,
