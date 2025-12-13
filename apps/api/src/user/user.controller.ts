@@ -4,10 +4,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
-interface JwtPayload {
-  sub: string;
+interface AuthenticatedUser {
+  id: string;
   email: string;
+  nickname: string;
   role: string;
+  isActive: boolean;
 }
 
 @Controller('users')
@@ -16,8 +18,8 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Patch('profile')
-  async updateProfile(@CurrentUser() user: JwtPayload, @Body() dto: UpdateProfileDto) {
-    const updatedUser = await this.userService.updateProfile(user.sub, dto);
+  async updateProfile(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateProfileDto) {
+    const updatedUser = await this.userService.updateProfile(user.id, dto);
     return {
       id: updatedUser.id,
       email: updatedUser.email,

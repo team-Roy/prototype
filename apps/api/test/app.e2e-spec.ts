@@ -201,6 +201,27 @@ describe('Fandom Lounge E2E Tests', () => {
     });
   });
 
+  describe('User - 프로필 관리', () => {
+    it('PATCH /api/users/profile - 프로필 업데이트 성공', async () => {
+      const response = await request(app.getHttpServer())
+        .patch('/api/users/profile')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ bio: 'E2E 테스트 자기소개' })
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data).toHaveProperty('email', testUser.email);
+    });
+
+    it('PATCH /api/users/profile - 인증 없이 요청 실패', async () => {
+      await request(app.getHttpServer())
+        .patch('/api/users/profile')
+        .send({ bio: '테스트' })
+        .expect(401);
+    });
+  });
+
   describe('Lounge - 라운지 생성 및 관리 (인증 필요)', () => {
     const testLounge = {
       name: 'E2E 테스트 라운지',
@@ -258,6 +279,24 @@ describe('Fandom Lounge E2E Tests', () => {
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data)).toBe(true);
       expect(response.body.data.length).toBeGreaterThan(0);
+    });
+
+    it('GET /api/lounges/:id/members - 라운지 멤버 목록 조회', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/api/lounges/${loungeId}/members`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('items');
+      expect(response.body.data).toHaveProperty('meta');
+      expect(Array.isArray(response.body.data.items)).toBe(true);
+      // 라운지 생성자가 자동으로 멤버로 추가됨
+      expect(response.body.data.items.length).toBeGreaterThan(0);
+      // 멤버 데이터 구조 확인
+      const member = response.body.data.items[0];
+      expect(member).toHaveProperty('id');
+      expect(member).toHaveProperty('nickname');
+      expect(member).toHaveProperty('joinedAt');
     });
   });
 
