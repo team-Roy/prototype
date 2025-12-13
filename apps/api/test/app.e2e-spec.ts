@@ -13,6 +13,17 @@ import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
+// 테스트용 환경변수 로드
+process.env.NODE_ENV = 'test';
+process.env.DATABASE_URL =
+  'postgresql://neondb_owner:npg_DmjH7QhvFIY0@ep-lingering-sky-a1duxuoc.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
+process.env.REDIS_URL = 'redis://localhost:6379';
+process.env.JWT_SECRET = 'test-jwt-secret-for-e2e-testing';
+process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-for-e2e-testing';
+process.env.JWT_EXPIRES_IN = '15m';
+process.env.JWT_REFRESH_EXPIRES_IN = '7d';
+process.env.BCRYPT_ROUNDS = '4';
+
 describe('Fandom Lounge E2E Tests', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -58,11 +69,17 @@ describe('Fandom Lounge E2E Tests', () => {
 
   afterAll(async () => {
     // 테스트 후 데이터 정리
-    await cleanupTestData();
-    await app.close();
+    if (prisma) {
+      await cleanupTestData();
+    }
+    if (app) {
+      await app.close();
+    }
   });
 
   async function cleanupTestData() {
+    if (!prisma) return;
+
     try {
       // 테스트 유저의 모든 관련 데이터 삭제
       const testUserRecord = await prisma.user.findUnique({
@@ -90,17 +107,21 @@ describe('Fandom Lounge E2E Tests', () => {
     it('GET /api/health - 헬스체크 성공', async () => {
       const response = await request(app.getHttpServer()).get('/api/health').expect(200);
 
-      expect(response.body).toHaveProperty('status', 'ok');
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('status', 'ok');
     });
   });
 
   describe('Auth Flow - 회원가입 → 로그인 → 토큰 갱신', () => {
     it('POST /api/auth/register - 회원가입 성공', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/api/auth/register')
-        .send(testUser)
-        .expect(201);
+      const response = await request(app.getHttpServer()).post('/api/auth/register').send(testUser);
 
+      // 디버깅용 - 실패시 응답 확인
+      if (response.status !== 201) {
+        console.log('Register failed:', response.status, response.body);
+      }
+
+      expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('id');
       expect(response.body.data).toHaveProperty('email', testUser.email);
@@ -361,8 +382,10 @@ describe('Fandom Lounge E2E Tests', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('lounges');
-      expect(response.body.data).toHaveProperty('posts');
+      // 검색 응답은 data.results 안에 lounges, posts가 있음
+      expect(response.body.data).toHaveProperty('results');
+      expect(response.body.data.results).toHaveProperty('lounges');
+      expect(response.body.data.results).toHaveProperty('posts');
     });
   });
 
