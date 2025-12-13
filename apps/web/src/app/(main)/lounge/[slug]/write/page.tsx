@@ -99,12 +99,19 @@ export default function WritePostPage() {
             .filter((t) => t.length > 0)
         : undefined;
 
+      // Format media data for backend (url|type|width|height)
+      const mediaIds =
+        uploadedMedia.length > 0
+          ? uploadedMedia.map((m) => `${m.url}|${m.type}|${m.width || ''}|${m.height || ''}`)
+          : undefined;
+
       const post = await postApi.create(lounge.id, {
         type: data.type,
         title: data.title || undefined,
         content: data.content,
         isAnonymous: data.isAnonymous || false,
         tags,
+        mediaIds,
       });
 
       router.push(`/post/${post.id}`);

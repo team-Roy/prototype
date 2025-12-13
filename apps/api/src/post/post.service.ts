@@ -201,6 +201,29 @@ export class PostService {
         });
       }
 
+      // Create media attachments
+      if (dto.mediaIds && dto.mediaIds.length > 0) {
+        await tx.postMedia.createMany({
+          data: dto.mediaIds.slice(0, 10).map((mediaData, index) => {
+            // Parse media data (format: "url|type|width|height")
+            const parts = mediaData.split('|');
+            const url = parts[0];
+            const type = (parts[1] as 'IMAGE' | 'VIDEO') || 'IMAGE';
+            const width = parts[2] ? parseInt(parts[2]) : null;
+            const height = parts[3] ? parseInt(parts[3]) : null;
+
+            return {
+              postId: newPost.id,
+              url,
+              type,
+              width,
+              height,
+              order: index,
+            };
+          }),
+        });
+      }
+
       // Update lounge post count
       await tx.lounge.update({
         where: { id: loungeId },

@@ -30,10 +30,10 @@ export class CommentService {
     const orderBy =
       sortBy === CommentSortBy.POPULAR
         ? [{ upvoteCount: 'desc' as const }, { createdAt: 'desc' as const }]
-        : [{ createdAt: 'asc' as const }];
+        : [{ createdAt: 'desc' as const }];
 
-    // Get root comments (no parentId)
-    const [comments, total] = await Promise.all([
+    // Get root comments (no parentId) and total count (including replies)
+    const [comments, rootTotal, totalWithReplies] = await Promise.all([
       this.prisma.comment.findMany({
         where: {
           postId,
@@ -73,6 +73,12 @@ export class CommentService {
           parentId: null,
         },
       }),
+      this.prisma.comment.count({
+        where: {
+          postId,
+          deletedAt: null,
+        },
+      }),
     ]);
 
     // Format comments with deleted status
@@ -81,10 +87,10 @@ export class CommentService {
     return {
       items: formattedComments,
       meta: {
-        total,
+        total: totalWithReplies, // Total count including replies for display
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(rootTotal / limit), // Pagination based on root comments
       },
     };
   }
