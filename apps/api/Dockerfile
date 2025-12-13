@@ -26,9 +26,9 @@ COPY turbo.json ./
 WORKDIR /app/apps/api
 RUN npx prisma generate
 
-# Build
+# Build shared package first, then api
 WORKDIR /app
-RUN pnpm --filter api build
+RUN pnpm --filter @fandom/shared build && pnpm --filter @fandom/api build
 
 # Production stage
 FROM node:20-alpine AS runner
