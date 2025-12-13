@@ -28,13 +28,25 @@ export interface NotificationListParams {
 
 export const notificationApi = {
   getAll: async (params?: NotificationListParams) => {
-    const response = await api.get<NotificationListResponse>('/notifications', { params });
-    return response.data;
+    try {
+      const response = await api.get<{ data: NotificationListResponse }>('/notifications', {
+        params,
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+      return { items: [], total: 0, page: 1, limit: 20, totalPages: 0 };
+    }
   },
 
   getUnreadCount: async () => {
-    const response = await api.get<{ count: number }>('/notifications/unread-count');
-    return response.data.count;
+    try {
+      const response = await api.get<{ data: { count: number } }>('/notifications/unread-count');
+      return response.data.data.count;
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+      return 0;
+    }
   },
 
   markAsRead: async (id: string) => {

@@ -105,7 +105,7 @@ export default function CreateLoungePage() {
               <Label htmlFor="name">라운지 이름 *</Label>
               <Input
                 id="name"
-                placeholder="예: 이세돌 팬덤"
+                placeholder="예: 우리 팬덤"
                 {...register('name')}
                 onChange={handleNameChange}
               />
@@ -116,12 +116,7 @@ export default function CreateLoungePage() {
               <Label htmlFor="slug">URL 슬러그</Label>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">/lounge/</span>
-                <Input
-                  id="slug"
-                  placeholder="isedol-fandom"
-                  {...register('slug')}
-                  className="flex-1"
-                />
+                <Input id="slug" placeholder="my-fandom" {...register('slug')} className="flex-1" />
               </div>
               {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
               <p className="text-xs text-muted-foreground">
