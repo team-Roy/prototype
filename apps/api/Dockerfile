@@ -1,10 +1,10 @@
-# Single stage build to avoid pnpm/npm compatibility issues
-FROM node:20-alpine
+# Use Debian slim instead of Alpine to avoid OpenSSL compatibility issues with Prisma
+FROM node:20-slim
 
 WORKDIR /app
 
-# Install OpenSSL 1.1 compatibility for Prisma
-RUN apk add --no-cache openssl1.1-compat
+# Install OpenSSL for Prisma
+RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
@@ -42,9 +42,9 @@ RUN rm -rf apps/api/src apps/api/test packages/shared/src && \
     rm -rf apps/api/node_modules/.cache packages/shared/node_modules/.cache && \
     rm -rf .git
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nestjs && \
+# Create non-root user (Debian syntax)
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs nestjs && \
     chown -R nestjs:nodejs /app
 
 USER nestjs
