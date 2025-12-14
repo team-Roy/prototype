@@ -32,16 +32,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: |
+          cd apps/api
+          npx prisma generate
+
       - name: Build shared package
         run: pnpm --filter @fandom/shared build
 
       - name: Build API
         run: pnpm --filter @fandom/api build
-
-      - name: Generate Prisma Client
-        run: |
-          cd apps/api
-          npx prisma generate
 
       - name: Create deployment package
         run: |
