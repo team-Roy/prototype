@@ -96,13 +96,13 @@ jobs:
             cp -r deploy/prisma app/
             cp deploy/package.json app/
 
-            # Copy @fandom/shared package
-            mkdir -p app/node_modules/@fandom/shared
-            cp -r deploy/node_modules/@fandom/shared/* app/node_modules/@fandom/shared/
-
             # Install production dependencies
             cd app
             npm install --production --legacy-peer-deps
+
+            # Copy @fandom/shared package AFTER npm install (npm install overwrites node_modules)
+            mkdir -p node_modules/@fandom/shared
+            cp -r /home/ec2-user/deploy/node_modules/@fandom/shared/* node_modules/@fandom/shared/
 
             # Generate Prisma client (use specific version)
             npx prisma@5.22.0 generate
