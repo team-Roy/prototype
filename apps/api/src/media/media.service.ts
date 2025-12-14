@@ -17,17 +17,16 @@ export class MediaService {
   private publicUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    const accountId = this.configService.get<string>('R2_ACCOUNT_ID');
-    const accessKeyId = this.configService.get<string>('R2_ACCESS_KEY_ID');
-    const secretAccessKey = this.configService.get<string>('R2_SECRET_ACCESS_KEY');
-    this.bucketName = this.configService.get<string>('R2_BUCKET_NAME') || 'fandom-lounge-media';
+    const region = this.configService.get<string>('AWS_REGION') || 'ap-northeast-2';
+    const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
+    const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
+    this.bucketName = this.configService.get<string>('S3_BUCKET_NAME') || 'fandom-lounge-media';
     this.publicUrl =
-      this.configService.get<string>('R2_PUBLIC_URL') ||
-      `https://${this.bucketName}.${accountId}.r2.cloudflarestorage.com`;
+      this.configService.get<string>('S3_PUBLIC_URL') ||
+      `https://${this.bucketName}.s3.${region}.amazonaws.com`;
 
     this.s3Client = new S3Client({
-      region: 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      region,
       credentials: {
         accessKeyId: accessKeyId || '',
         secretAccessKey: secretAccessKey || '',
