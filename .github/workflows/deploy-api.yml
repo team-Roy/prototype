@@ -48,7 +48,14 @@ jobs:
           mkdir -p deploy
           cp -r apps/api/dist deploy/
           cp -r apps/api/prisma deploy/
-          cp apps/api/package.json deploy/
+
+          # Create standalone package.json (remove workspace reference)
+          node -e "
+            const pkg = require('./apps/api/package.json');
+            delete pkg.dependencies['@fandom/shared'];
+            pkg.name = 'fandom-api';
+            console.log(JSON.stringify(pkg, null, 2));
+          " > deploy/package.json
 
           # Copy shared package to node_modules/@fandom/shared
           mkdir -p deploy/node_modules/@fandom/shared
