@@ -49,9 +49,12 @@ jobs:
           cp -r apps/api/dist deploy/
           cp -r apps/api/prisma deploy/
           cp apps/api/package.json deploy/
-          cp pnpm-lock.yaml deploy/
-          cp -r node_modules deploy/ 2>/dev/null || true
-          cp -r packages deploy/ 2>/dev/null || true
+
+          # Copy shared package to node_modules/@fandom/shared
+          mkdir -p deploy/node_modules/@fandom/shared
+          cp -r packages/shared/dist deploy/node_modules/@fandom/shared/
+          cp packages/shared/package.json deploy/node_modules/@fandom/shared/
+
           tar -czf deploy.tar.gz deploy
 
       - name: Copy to EC2
@@ -86,15 +89,19 @@ jobs:
             cp -r deploy/prisma app/
             cp deploy/package.json app/
 
+            # Copy @fandom/shared package
+            mkdir -p app/node_modules/@fandom/shared
+            cp -r deploy/node_modules/@fandom/shared/* app/node_modules/@fandom/shared/
+
             # Install production dependencies
             cd app
             npm install --production --legacy-peer-deps
 
-            # Generate Prisma client
-            npx prisma generate
+            # Generate Prisma client (use specific version)
+            npx prisma@5.22.0 generate
 
             # Run database migrations (if any)
-            npx prisma migrate deploy || true
+            npx prisma@5.22.0 migrate deploy || true
 
             # Restart PM2
             pm2 delete fandom-api 2>/dev/null || true
