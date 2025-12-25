@@ -488,28 +488,29 @@ CORS_ORIGIN=https://fandom-lounge.vercel.app,http://localhost:3000
 - [x] 모바일 반응형 개선
 - [x] 게시물 이미지/영상 업로드 (MediaUploader 컴포넌트)
 
+### 이메일 서비스 (2024.12.25)
+
+- [x] AWS SES 도메인 인증 (fandom-lounge.com DKIM 설정)
+- [x] 이메일 서비스 모듈 구현 (EmailService)
+- [x] 비밀번호 찾기/초기화 기능 (/forgot-password, /reset-password)
+- [x] 회원가입 이메일 인증 (/verify-email, /resend-verification)
+- [x] GitHub Actions에 prisma db push 자동화 추가
+
 ---
 
 ## TODO: 앞으로 해야 할 작업
 
 ### 우선순위 높음
 
-- [ ] **이메일 서비스 구현 (AWS SES)**
-  - 도메인 인증 필요 (fandom-lounge.com)
-  - 가비아 DNS에 DKIM/SPF 레코드 추가
-  - SES 샌드박스 해제 요청
-- [ ] **비밀번호 찾기/초기화 기능**
-  - 이메일로 초기화 링크 발송
-  - 토큰 기반 비밀번호 재설정
-- [ ] **회원가입 이메일 인증**
-  - 인증 이메일 발송
-  - 이메일 미인증 시 기능 제한
-
-### 우선순위 중간
-
+- [ ] **AWS SES 프로덕션 액세스 요청**
+  - 현재 샌드박스 모드 (인증된 이메일만 발송 가능)
+  - AWS 콘솔에서 프로덕션 액세스 요청 필요
 - [ ] **ElastiCache Valkey 연결 수정**
   - 보안 그룹 설정 확인 (EC2 → ElastiCache)
   - 현재 fallback 모드로 동작 중
+
+### 우선순위 중간
+
 - [ ] **프로필 수정 기능**
   - 프로필 이미지 업로드 UI 추가
   - 닉네임 변경 기능
