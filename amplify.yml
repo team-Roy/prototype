@@ -13,9 +13,10 @@ frontend:
         - mkdir -p apps/web/.amplify-hosting/compute/default
         - mkdir -p apps/web/.amplify-hosting/static/_next/static
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
-        - cp apps/web/.next/standalone/apps/web/package.json apps/web/.amplify-hosting/compute/default/
+        # package.json에서 workspace: 프로토콜 제거 후 복사
+        - 'cat apps/web/.next/standalone/apps/web/package.json | sed ''s/"@fandom\/shared": "workspace:\*",//g'' > apps/web/.amplify-hosting/compute/default/package.json'
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
-        # pnpm flat node_modules 생성을 위해 npm으로 재설치
+        # npm으로 flat node_modules 생성
         - cd apps/web/.amplify-hosting/compute/default && npm install --omit=dev --legacy-peer-deps
         - cp -r apps/web/.next/static/. apps/web/.amplify-hosting/static/_next/static/
         - test -d apps/web/public && cp -r apps/web/public/. apps/web/.amplify-hosting/static/ || echo "No public folder"
