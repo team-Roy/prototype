@@ -12,6 +12,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@aws-amplify/adapter-nextjs": "^1.6.12",
     "@fandom/shared": "workspace:*",
     "@hookform/resolvers": "^3.3.2",
     "@radix-ui/react-avatar": "^1.0.4",

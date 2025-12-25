@@ -1,7 +1,8 @@
+const { createAmplifyNextConfig } = require('@aws-amplify/adapter-nextjs');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
   transpilePackages: ['@fandom/shared'],
   images: {
     remotePatterns: [
@@ -21,4 +22,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = createAmplifyNextConfig(nextConfig);
