@@ -10,6 +10,12 @@ frontend:
       commands:
         - pnpm --filter @fandom/shared build
         - pnpm --filter @fandom/web build
+        # 빌드 구조 디버깅
+        - echo "=== Build output structure ==="
+        - ls -la apps/web/.next/ || true
+        - ls -la apps/web/.next/standalone/ || true
+        - ls -la apps/web/.next/standalone/apps/web/ || true
+        - ls -la apps/web/.next/standalone/apps/web/.next/ || true
         - mkdir -p apps/web/.amplify-hosting/compute/default
         - mkdir -p apps/web/.amplify-hosting/static/_next/static
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
@@ -18,8 +24,8 @@ frontend:
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
         # npm으로 flat node_modules 생성
         - cd apps/web/.amplify-hosting/compute/default && npm install --omit=dev --legacy-peer-deps
-        # static 파일 복사 (standalone 빌드에서는 .next/standalone/apps/web/.next/static 경로 사용)
-        - test -d apps/web/.next/static && cp -r apps/web/.next/static/. apps/web/.amplify-hosting/static/_next/static/ || cp -r apps/web/.amplify-hosting/compute/default/.next/static/. apps/web/.amplify-hosting/static/_next/static/
+        # static 파일은 원래 .next/static에 있음 (standalone 외부)
+        - cp -r apps/web/.next/static/. apps/web/.amplify-hosting/static/_next/static/
         - test -d apps/web/public && cp -r apps/web/public/. apps/web/.amplify-hosting/static/ || echo "No public folder"
         - echo "=== node_modules check ==="
         - ls -la apps/web/.amplify-hosting/compute/default/node_modules/ | head -20
