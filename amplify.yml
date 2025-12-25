@@ -10,17 +10,18 @@ frontend:
       commands:
         - pnpm --filter @fandom/shared build
         - pnpm --filter @fandom/web build
-        - mkdir -p apps/web/.amplify-hosting/compute/default
+        - mkdir -p apps/web/.amplify-hosting/compute/default/node_modules
         - mkdir -p apps/web/.amplify-hosting/static/_next/static
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
         - cp apps/web/.next/standalone/apps/web/package.json apps/web/.amplify-hosting/compute/default/
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
-        - cp -r apps/web/.next/standalone/apps/web/node_modules/. apps/web/.amplify-hosting/compute/default/node_modules/
         - cp -r apps/web/.next/standalone/node_modules/. apps/web/.amplify-hosting/compute/default/node_modules/
+        - test -d apps/web/.next/standalone/apps/web/node_modules && cp -r apps/web/.next/standalone/apps/web/node_modules/. apps/web/.amplify-hosting/compute/default/node_modules/ || true
         - cp -r apps/web/.next/static/. apps/web/.amplify-hosting/static/_next/static/
         - test -d apps/web/public && cp -r apps/web/public/. apps/web/.amplify-hosting/static/ || echo "No public folder"
-        - echo "=== Final compute structure ==="
-        - ls -la apps/web/.amplify-hosting/compute/default/
+        - echo "=== node_modules check ==="
+        - ls apps/web/.amplify-hosting/compute/default/node_modules/ | head -20
+        - ls apps/web/.amplify-hosting/compute/default/node_modules/next/ || echo "next not found"
         - |
           echo '{"version":1,"routes":[{"path":"/_next/static/*","target":{"kind":"Static"}},{"path":"/*.*","target":{"kind":"Static"},"fallback":{"kind":"Compute","src":"default"}},{"path":"/*","target":{"kind":"Compute","src":"default"}}],"computeResources":[{"name":"default","runtime":"nodejs20.x","entrypoint":"server.js"}],"framework":{"name":"next","version":"14.0.4"}}' > apps/web/.amplify-hosting/deploy-manifest.json
   artifacts:
