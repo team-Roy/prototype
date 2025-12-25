@@ -13,6 +13,10 @@ async function bootstrap() {
       if (!origin) return callback(null, true);
       // Allow all vercel.app preview deployments
       if (origin.endsWith('.vercel.app')) return callback(null, true);
+      // Allow all amplifyapp.com preview deployments
+      if (origin.endsWith('.amplifyapp.com')) return callback(null, true);
+      // Allow fandom-lounge.com and subdomains
+      if (origin.endsWith('fandom-lounge.com')) return callback(null, true);
       // Check against allowed origins
       if (allowedOrigins.includes(origin)) return callback(null, true);
       callback(new Error('Not allowed by CORS'));
