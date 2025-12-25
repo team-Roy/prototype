@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -37,7 +36,6 @@ const registerSchema = z
 type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { register: registerUser, isLoading } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -57,9 +55,6 @@ export default function RegisterPage() {
       setError(null);
       await registerUser(data.email, data.password, data.nickname);
       setSuccess(true);
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
     } catch (err) {
       const axiosError = err as AxiosError<{ error: { message: string } }>;
       setError(axiosError.response?.data?.error?.message || '회원가입에 실패했습니다.');
@@ -81,8 +76,19 @@ export default function RegisterPage() {
           <CardTitle className="text-2xl font-bold text-center text-green-600">
             회원가입 완료!
           </CardTitle>
-          <CardDescription className="text-center">로그인 페이지로 이동합니다...</CardDescription>
+          <CardDescription className="text-center">
+            인증 이메일이 발송되었습니다.
+            <br />
+            이메일을 확인하여 계정을 인증해주세요.
+          </CardDescription>
         </CardHeader>
+        <CardContent>
+          <Link href="/login">
+            <Button variant="outline" className="w-full">
+              로그인으로 이동
+            </Button>
+          </Link>
+        </CardContent>
       </Card>
     );
   }

@@ -7,6 +7,7 @@ export interface AuthUser {
   nickname: string;
   profileImage: string | null;
   role: string;
+  isEmailVerified: boolean;
 }
 
 interface TokenResponse {

@@ -53,6 +53,7 @@ describe('authStore', () => {
         nickname: 'testuser',
         profileImage: null,
         role: 'USER',
+        isEmailVerified: true,
       };
 
       const mockTokens = {
@@ -132,6 +133,7 @@ describe('authStore', () => {
           nickname: 'testuser',
           profileImage: null,
           role: 'USER',
+          isEmailVerified: true,
         },
         isAuthenticated: true,
       });
@@ -157,6 +159,7 @@ describe('authStore', () => {
           nickname: 'testuser',
           profileImage: null,
           role: 'USER',
+          isEmailVerified: true,
         },
         isAuthenticated: true,
       });
@@ -202,6 +205,7 @@ describe('authStore', () => {
         nickname: 'testuser',
         profileImage: null,
         role: 'USER',
+        isEmailVerified: true,
       };
 
       mockApi.post.mockResolvedValue({
@@ -249,6 +253,7 @@ describe('authStore', () => {
         nickname: 'testuser',
         profileImage: null,
         role: 'USER',
+        isEmailVerified: true,
       };
 
       const { setUser } = useAuthStore.getState();
@@ -267,6 +272,7 @@ describe('authStore', () => {
           nickname: 'testuser',
           profileImage: null,
           role: 'USER',
+          isEmailVerified: true,
         },
         isAuthenticated: true,
       });
@@ -296,6 +302,7 @@ describe('authStore', () => {
                         nickname: 'test',
                         profileImage: null,
                         role: 'USER',
+                        isEmailVerified: true,
                       },
                       tokens: { accessToken: 'token', refreshToken: 'refresh', expiresIn: 3600 },
                     },

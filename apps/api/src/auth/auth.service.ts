@@ -34,6 +34,7 @@ export interface AuthUser {
   nickname: string;
   profileImage: string | null;
   role: string;
+  isEmailVerified: boolean;
 }
 
 @Injectable()
@@ -79,10 +80,105 @@ export class AuthService {
         password: hashedPassword,
         nickname: dto.nickname,
         provider: AuthProvider.LOCAL,
+        isEmailVerified: false,
       },
     });
 
+    // 이메일 인증 토큰 생성 및 발송
+    await this.sendVerificationEmail(user.id, user.email);
+
     return this.sanitizeUser(user);
+  }
+
+  async sendVerificationEmail(userId: string, email: string): Promise<void> {
+    // 기존 토큰 삭제
+    await this.prisma.emailVerificationToken.deleteMany({
+      where: { userId },
+    });
+
+    // 새 토큰 생성 (24시간 유효)
+    const token = uuidv4();
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    await this.prisma.emailVerificationToken.create({
+      data: {
+        userId,
+        token,
+        expiresAt,
+      },
+    });
+
+    // 이메일 발송
+    await this.emailService.sendEmailVerification(email, token);
+  }
+
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    const tokenRecord = await this.prisma.emailVerificationToken.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    if (!tokenRecord) {
+      throw new BadRequestException({
+        code: 'INVALID_TOKEN',
+        message: '유효하지 않은 인증 링크입니다.',
+      });
+    }
+
+    if (tokenRecord.expiresAt < new Date()) {
+      await this.prisma.emailVerificationToken.delete({
+        where: { id: tokenRecord.id },
+      });
+      throw new BadRequestException({
+        code: 'TOKEN_EXPIRED',
+        message: '인증 링크가 만료되었습니다. 새로운 인증 이메일을 요청해주세요.',
+      });
+    }
+
+    if (tokenRecord.usedAt) {
+      throw new BadRequestException({
+        code: 'TOKEN_USED',
+        message: '이미 인증된 이메일입니다.',
+      });
+    }
+
+    // 이메일 인증 완료 처리
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: tokenRecord.userId },
+        data: { isEmailVerified: true },
+      }),
+      this.prisma.emailVerificationToken.update({
+        where: { id: tokenRecord.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { message: '이메일 인증이 완료되었습니다.' };
+  }
+
+  async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // 보안: 이메일 존재 여부 노출하지 않음
+      return { message: '이메일이 등록되어 있다면 인증 메일이 발송됩니다.' };
+    }
+
+    if (user.isEmailVerified) {
+      return { message: '이미 인증된 이메일입니다.' };
+    }
+
+    if (user.provider !== AuthProvider.LOCAL) {
+      return { message: '소셜 로그인 계정은 이메일 인증이 필요하지 않습니다.' };
+    }
+
+    await this.sendVerificationEmail(user.id, user.email);
+
+    return { message: '인증 이메일이 발송되었습니다.' };
   }
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -243,6 +339,7 @@ export class AuthService {
       nickname: user.nickname,
       profileImage: user.profileImage,
       role: user.role,
+      isEmailVerified: user.isEmailVerified,
     };
   }
 
