@@ -13,6 +13,16 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AxiosError } from 'axios';
 
+interface MemberItem {
+  user: {
+    id: string;
+    nickname: string;
+    profileImage: string | null;
+  };
+  role: 'OWNER' | 'MANAGER' | null;
+  joinedAt: string;
+}
+
 const updateLoungeSchema = z.object({
   name: z
     .string()
@@ -32,11 +42,13 @@ export default function LoungeSettingsPage() {
   const { isLoading: isCheckingAuth } = useRequireAuth();
 
   const [lounge, setLounge] = useState<LoungeDetailResponse | null>(null);
+  const [members, setMembers] = useState<MemberItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isManagingManagers, setIsManagingManagers] = useState(false);
 
   const {
     register,
@@ -62,6 +74,10 @@ export default function LoungeSettingsPage() {
         description: data.description || '',
         rules: data.rules || '',
       });
+
+      // Fetch members for manager management
+      const membersData = await loungeApi.getMembers(data.id, 1, 100);
+      setMembers(membersData.items);
     } catch (err) {
       console.error('Failed to fetch lounge:', err);
       router.push('/');
@@ -69,6 +85,37 @@ export default function LoungeSettingsPage() {
       setIsLoading(false);
     }
   }, [slug, router, reset]);
+
+  const handleAddManager = async (userId: string) => {
+    if (!lounge) return;
+    try {
+      setIsManagingManagers(true);
+      await loungeApi.addManager(lounge.id, userId);
+      await fetchLounge();
+      setSuccess('매니저가 추가되었습니다');
+    } catch (err) {
+      const axiosError = err as AxiosError<{ error: { message: string } }>;
+      setError(axiosError.response?.data?.error?.message || '매니저 추가에 실패했습니다');
+    } finally {
+      setIsManagingManagers(false);
+    }
+  };
+
+  const handleRemoveManager = async (userId: string) => {
+    if (!lounge) return;
+    if (!confirm('정말로 이 매니저를 해제하시겠습니까?')) return;
+    try {
+      setIsManagingManagers(true);
+      await loungeApi.removeManager(lounge.id, userId);
+      await fetchLounge();
+      setSuccess('매니저가 해제되었습니다');
+    } catch (err) {
+      const axiosError = err as AxiosError<{ error: { message: string } }>;
+      setError(axiosError.response?.data?.error?.message || '매니저 해제에 실패했습니다');
+    } finally {
+      setIsManagingManagers(false);
+    }
+  };
 
   useEffect(() => {
     if (!isCheckingAuth) {
@@ -187,22 +234,69 @@ export default function LoungeSettingsPage() {
           <CardTitle>매니저 관리</CardTitle>
           <CardDescription>라운지 매니저를 관리합니다</CardDescription>
         </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            {lounge.managers.map((manager) => (
-              <li
-                key={manager.user.id}
-                className="flex items-center justify-between p-2 rounded-lg bg-muted"
-              >
-                <div className="flex items-center gap-2">
-                  <span>{manager.user.nickname}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {manager.role === 'OWNER' ? '소유자' : '매니저'}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
+        <CardContent className="space-y-4">
+          {/* Current Managers */}
+          <div>
+            <h4 className="text-sm font-medium mb-2">현재 매니저</h4>
+            <ul className="space-y-2">
+              {lounge.managers.map((manager) => (
+                <li
+                  key={manager.user.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{manager.user.nickname}</span>
+                    <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">
+                      {manager.role === 'OWNER' ? '소유자' : '매니저'}
+                    </span>
+                  </div>
+                  {lounge.managerRole === 'OWNER' && manager.role !== 'OWNER' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveManager(manager.user.id)}
+                      disabled={isManagingManagers}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      해제
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Add Manager from Members */}
+          {lounge.managerRole === 'OWNER' && (
+            <div>
+              <h4 className="text-sm font-medium mb-2">멤버를 매니저로 임명</h4>
+              <ul className="space-y-2 max-h-60 overflow-y-auto">
+                {members
+                  .filter((m) => !m.role)
+                  .map((member) => (
+                    <li
+                      key={member.user.id}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                    >
+                      <span>{member.user.nickname}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddManager(member.user.id)}
+                        disabled={isManagingManagers}
+                      >
+                        매니저 임명
+                      </Button>
+                    </li>
+                  ))}
+                {members.filter((m) => !m.role).length === 0 && (
+                  <p className="text-sm text-muted-foreground py-2">
+                    매니저로 임명할 수 있는 멤버가 없습니다.
+                  </p>
+                )}
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
 

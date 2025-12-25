@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { AxiosError } from 'axios';
 import { LoungeDetailResponse, loungeApi } from '@/lib/lounge';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
@@ -32,8 +33,15 @@ export function LoungeHeader({ lounge, onUpdate }: LoungeHeaderProps) {
         await loungeApi.join(lounge.id);
       }
       onUpdate();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to join/leave lounge:', error);
+      let errorMessage = '라운지 처리 중 오류가 발생했습니다.';
+      if (error instanceof AxiosError && error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }

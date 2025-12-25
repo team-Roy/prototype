@@ -16,6 +16,7 @@ import { VoteModule } from './vote/vote.module';
 import { SearchModule } from './search/search.module';
 import { NotificationModule } from './notification/notification.module';
 import { AdminModule } from './admin/admin.module';
+import { EmailModule } from './email/email.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor } from './common/interceptors';
 
@@ -56,6 +57,7 @@ import { TransformInterceptor } from './common/interceptors';
     SearchModule,
     NotificationModule,
     AdminModule,
+    EmailModule,
   ],
   providers: [
     {

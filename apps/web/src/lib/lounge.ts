@@ -128,4 +128,27 @@ export const loungeApi = {
     );
     return response.data.data;
   },
+
+  getMembers: async (id: string, page: number = 1, limit: number = 20) => {
+    const response = await api.get<{
+      data: {
+        items: {
+          user: {
+            id: string;
+            nickname: string;
+            profileImage: string | null;
+          };
+          role: 'OWNER' | 'MANAGER' | null;
+          joinedAt: string;
+        }[];
+        meta: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
+      };
+    }>(`/lounges/${id}/members`, { params: { page, limit } });
+    return response.data.data;
+  },
 };

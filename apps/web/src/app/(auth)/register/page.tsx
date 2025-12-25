@@ -90,7 +90,9 @@ export default function RegisterPage() {
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">팬덤 라운지</CardTitle>
+        <Link href="/" className="block text-center hover:opacity-80 transition-opacity">
+          <CardTitle className="text-2xl font-bold">팬덤 라운지</CardTitle>
+        </Link>
         <CardDescription className="text-center">새 계정을 만드세요</CardDescription>
       </CardHeader>
       <CardContent>

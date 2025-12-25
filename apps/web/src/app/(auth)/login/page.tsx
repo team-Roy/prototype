@@ -60,7 +60,9 @@ function LoginFormContent() {
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">팬덤 라운지</CardTitle>
+        <Link href="/" className="block text-center hover:opacity-80 transition-opacity">
+          <CardTitle className="text-2xl font-bold">팬덤 라운지</CardTitle>
+        </Link>
         <CardDescription className="text-center">계정에 로그인하세요</CardDescription>
       </CardHeader>
       <CardContent>
@@ -76,7 +78,12 @@ function LoginFormContent() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">비밀번호</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">비밀번호</Label>
+              <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                비밀번호를 잊으셨나요?
+              </Link>
+            </div>
             <Input id="password" type="password" placeholder="********" {...register('password')} />
             {errors.password && (
               <p className="text-sm text-destructive">{errors.password.message}</p>
