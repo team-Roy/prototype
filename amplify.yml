@@ -15,11 +15,12 @@ frontend:
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
         - cp apps/web/.next/standalone/apps/web/package.json apps/web/.amplify-hosting/compute/default/
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
-        - cp -rL apps/web/.next/standalone/node_modules apps/web/.amplify-hosting/compute/default/
+        # pnpm flat node_modules 생성을 위해 npm으로 재설치
+        - cd apps/web/.amplify-hosting/compute/default && npm install --omit=dev --legacy-peer-deps
         - cp -r apps/web/.next/static/. apps/web/.amplify-hosting/static/_next/static/
         - test -d apps/web/public && cp -r apps/web/public/. apps/web/.amplify-hosting/static/ || echo "No public folder"
         - echo "=== node_modules check ==="
-        - ls -la apps/web/.amplify-hosting/compute/default/node_modules/
+        - ls -la apps/web/.amplify-hosting/compute/default/node_modules/ | head -20
         - |
           echo '{"version":1,"routes":[{"path":"/_next/static/*","target":{"kind":"Static"}},{"path":"/*.*","target":{"kind":"Static"},"fallback":{"kind":"Compute","src":"default"}},{"path":"/*","target":{"kind":"Compute","src":"default"}}],"computeResources":[{"name":"default","runtime":"nodejs20.x","entrypoint":"server.js"}],"framework":{"name":"next","version":"14.0.4"}}' > apps/web/.amplify-hosting/deploy-manifest.json
   artifacts:
