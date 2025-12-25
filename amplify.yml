@@ -15,8 +15,8 @@ frontend:
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
         - cp apps/web/.next/standalone/apps/web/package.json apps/web/.amplify-hosting/compute/default/
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
-        - cp -r apps/web/.next/standalone/node_modules/. apps/web/.amplify-hosting/compute/default/node_modules/
-        - test -d apps/web/.next/standalone/apps/web/node_modules && cp -r apps/web/.next/standalone/apps/web/node_modules/. apps/web/.amplify-hosting/compute/default/node_modules/ || true
+        - cp -rL apps/web/.next/standalone/node_modules/. apps/web/.amplify-hosting/compute/default/node_modules/
+        - test -d apps/web/.next/standalone/apps/web/node_modules && cp -rL apps/web/.next/standalone/apps/web/node_modules/. apps/web/.amplify-hosting/compute/default/node_modules/ || true
         - cp -r apps/web/.next/static/. apps/web/.amplify-hosting/static/_next/static/
         - test -d apps/web/public && cp -r apps/web/public/. apps/web/.amplify-hosting/static/ || echo "No public folder"
         - echo "=== node_modules check ==="
