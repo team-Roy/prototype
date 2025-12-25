@@ -11,9 +11,12 @@ frontend:
         - pnpm --filter @fandom/shared build
         - pnpm --filter @fandom/web build
   artifacts:
-    baseDirectory: apps/web/.next
+    baseDirectory: apps/web
     files:
-      - '**/*'
+      - '.next/**/*'
+      - 'node_modules/**/*'
+      - 'package.json'
+      - 'public/**/*'
   cache:
     paths:
       - node_modules/**/*
