@@ -11,9 +11,9 @@ frontend:
         - pnpm --filter @fandom/shared build
         - pnpm --filter @fandom/web build
         - mkdir -p apps/web/.amplify-hosting/compute/default
-        - mkdir -p apps/web/.amplify-hosting/static
+        - mkdir -p apps/web/.amplify-hosting/static/_next
         - cp -r apps/web/.next/standalone/apps/web/. apps/web/.amplify-hosting/compute/default/
-        - cp -r apps/web/.next/static apps/web/.amplify-hosting/static/_next/static
+        - cp -r apps/web/.next/static apps/web/.amplify-hosting/static/_next/
         - cp -r apps/web/public/. apps/web/.amplify-hosting/static/
         - |
           echo '{"version":1,"routes":[{"path":"/_next/static/*","target":{"kind":"Static"}},{"path":"/*.*","target":{"kind":"Static"},"fallback":{"kind":"Compute","src":"default"}},{"path":"/*","target":{"kind":"Compute","src":"default"}}],"computeResources":[{"name":"default","runtime":"nodejs18.x","entrypoint":"server.js"}],"framework":{"name":"next","version":"14.0.4"}}' > apps/web/.amplify-hosting/deploy-manifest.json
