@@ -111,10 +111,20 @@ export default function AdminPage() {
     }
   };
 
-  if (!isInitialized || !isAuthenticated || user?.role !== 'ADMIN') {
+  // 초기화 전이면 로딩 표시
+  if (!isInitialized) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">로딩 중...</div>
+        <div className="text-center text-muted-foreground">로딩 중...</div>
+      </div>
+    );
+  }
+
+  // 관리자가 아니면 접근 거부 (useEffect에서 리다이렉트 처리)
+  if (!isAuthenticated || user?.role !== 'ADMIN') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center text-destructive">접근 권한이 없습니다.</div>
       </div>
     );
   }
