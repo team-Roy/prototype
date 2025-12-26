@@ -37,6 +37,32 @@
 - Resend API Key 설정 완료
 - 도메인 인증 완료 (Cloudflare 자동 연동)
 
+### 6. 역할 뱃지 및 이름 색상 구분 (2024-12-26)
+
+- RoleBadge 컴포넌트 추가 (`apps/web/src/components/ui/role-badge.tsx`)
+  - 관리자: 빨간색 Shield 아이콘
+  - 크리에이터: 보라색 Star 아이콘
+- 헤더와 프로필 페이지에 역할 표시 적용
+- 관리자/크리에이터 이름에 색상 구분 적용
+
+### 7. 메인 페이지 UI 개선 (2024-12-26)
+
+- 검색 중심 UI로 변경 (`apps/web/src/app/(main)/page.tsx`)
+- 대형 "라운지 만들기" CTA 버튼 제거
+- 빠른 액션 버튼으로 대체 (모든 라운지, 라운지 만들기, 로그인/회원가입)
+- 크리에이터 신청 배너 추가 (일반 사용자 대상)
+
+### 8. 하이브리드 공식 라운지 시스템 (2024-12-26)
+
+- **정책**: 누구나 라운지 생성 가능, 크리에이터가 공식 인증 가능
+- Prisma 스키마에 `officialCreatorId` 필드 추가
+- API 엔드포인트:
+  - `POST /lounges/:id/claim-official` - 크리에이터가 소유 라운지를 공식 인증
+  - `POST /lounges/:id/approve-official` - 관리자가 공식 인증 승인
+  - `DELETE /lounges/:id/official` - 관리자가 공식 인증 해제
+  - `GET /lounges/official/:creatorId` - 크리에이터의 공식 라운지 목록
+- 공식 라운지 표시: BadgeCheck 아이콘 + 공식 크리에이터 정보
+
 ---
 
 ## 진행 중인 작업
@@ -53,7 +79,9 @@
 
 1. [ ] 이메일 인증 기능 테스트
 2. [ ] 비밀번호 찾기 기능 테스트
-3. [ ] DNS 전파 완료 확인 (fandom-lounge.com)
+3. [x] DNS 전파 완료 확인 (fandom-lounge.com)
+4. [ ] 크리에이터 라운지 인증 플로우 프론트엔드 UI 추가
+5. [ ] 관리자 대시보드에서 공식 라운지 승인 기능 추가
 
 ---
 
@@ -189,9 +217,9 @@ EMAIL_FROM=noreply@fandom-lounge.com
 
 ### Amplify 빌드 이슈 해결
 
-1. pnpm symlink 문제 → npm install로 대체
-2. 220MB 사이즈 제한 → 최소 의존성만 설치 (next, react, react-dom)
-3. workspace: 프로토콜 오류 → 별도 package.json 생성
+1. pnpm symlink 문제 → `.npmrc`에 `node-linker=hoisted` 추가로 해결
+2. 220MB 사이즈 제한 → hoisted 모드로 평면적 node_modules 생성
+3. workspace: 프로토콜 오류 → hoisted 모드에서 자동 해결
 
 ### 도메인 설정 이슈 해결
 
@@ -203,3 +231,8 @@ EMAIL_FROM=noreply@fandom-lounge.com
 
 1. AWS SES 프로덕션 요청 거절 → Resend로 대체
 2. EC2 배포 시 workspace 프로토콜 오류 → package.json에서 제거
+
+### EC2 Prisma 버전 이슈 (2024-12-26)
+
+1. 전역 Prisma v7 설치로 스키마 오류 발생
+2. 해결: `npm exec -- prisma@5.22.0 db push`로 특정 버전 사용
