@@ -17,17 +17,11 @@ frontend:
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
         - cp apps/web/.next/standalone/apps/web/package.json apps/web/.amplify-hosting/compute/default/
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
-        # standalone 구조 디버깅
-        - echo "=== Standalone structure ==="
-        - ls -la apps/web/.next/standalone/
-        - ls -la apps/web/.next/standalone/node_modules/ | head -20
-        - test -d apps/web/.next/standalone/apps/web/node_modules && ls -la apps/web/.next/standalone/apps/web/node_modules/ | head -20 || echo "No apps/web/node_modules"
-        # next 패키지 위치 확인
-        - find apps/web/.next/standalone -name "next" -type d | head -5
-        # standalone node_modules 복사 (루트)
-        - cp -r apps/web/.next/standalone/node_modules apps/web/.amplify-hosting/compute/default/
-        # apps/web 하위의 node_modules도 복사 (있으면)
-        - test -d apps/web/.next/standalone/apps/web/node_modules && cp -r apps/web/.next/standalone/apps/web/node_modules/* apps/web/.amplify-hosting/compute/default/node_modules/ || echo "No apps/web node_modules to copy"
+        # pnpm symlink 구조를 실제 파일로 복사 (-L 옵션 사용)
+        # 먼저 루트 node_modules 복사 (.pnpm 포함)
+        - cp -rL apps/web/.next/standalone/node_modules apps/web/.amplify-hosting/compute/default/
+        # apps/web의 node_modules도 복사 (next, react symlink -> 실제 파일로)
+        - test -d apps/web/.next/standalone/apps/web/node_modules && cp -rL apps/web/.next/standalone/apps/web/node_modules/* apps/web/.amplify-hosting/compute/default/node_modules/ || echo "No apps/web node_modules"
         - test -d apps/web/public && cp -r apps/web/public/* apps/web/.amplify-hosting/static/ || echo "No public folder"
         - echo "=== Size check ==="
         - du -sh apps/web/.amplify-hosting/compute/default/
