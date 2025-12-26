@@ -17,9 +17,9 @@ import {
   AddManagerDto,
   BanUserDto,
 } from './dto';
-import { JwtAuthGuard, OptionalAuthGuard } from '../auth/guards';
-import { CurrentUser, Public } from '../common/decorators';
-import { User } from '@prisma/client';
+import { JwtAuthGuard, OptionalAuthGuard, RolesGuard } from '../auth/guards';
+import { CurrentUser, Public, Roles } from '../common/decorators';
+import { User, UserRole } from '@prisma/client';
 
 @Controller('lounges')
 export class LoungeController {
@@ -128,5 +128,54 @@ export class LoungeController {
     @CurrentUser() user: User
   ) {
     return this.loungeService.unbanUser(id, user.id, targetUserId);
+  }
+
+  // =============================================
+  // 공식 라운지 관련 API
+  // =============================================
+
+  /**
+   * 크리에이터가 자신의 라운지를 공식 인증 요청
+   * - 크리에이터가 라운지 소유자인 경우 즉시 인증
+   * - 소유자가 아닌 경우 관리자 승인 필요
+   */
+  @Post(':id/claim-official')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CREATOR)
+  async claimOfficial(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.loungeService.claimOfficial(id, user.id);
+  }
+
+  /**
+   * 관리자가 라운지를 공식 인증 처리
+   */
+  @Post(':id/approve-official')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async approveOfficial(
+    @Param('id') id: string,
+    @Body('creatorId') creatorId: string,
+    @CurrentUser() user: User
+  ) {
+    return this.loungeService.approveOfficial(id, creatorId, user.id);
+  }
+
+  /**
+   * 관리자가 공식 인증 해제
+   */
+  @Delete(':id/official')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async revokeOfficial(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.loungeService.revokeOfficial(id, user.id);
+  }
+
+  /**
+   * 특정 크리에이터의 공식 라운지 목록 조회
+   */
+  @Get('official/:creatorId')
+  @Public()
+  async getOfficialLounges(@Param('creatorId') creatorId: string) {
+    return this.loungeService.getOfficialLounges(creatorId);
   }
 }

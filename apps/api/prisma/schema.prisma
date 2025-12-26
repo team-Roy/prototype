@@ -102,6 +102,7 @@ model User {
 
   // Relations
   loungesCreated    Lounge[]          @relation("LoungeCreator")
+  officialLounges   Lounge[]          @relation("OfficialLounge")
   loungeManagers    LoungeManager[]
   loungeMemberships LoungeMember[]
   posts             Post[]
@@ -235,9 +236,13 @@ model Lounge {
   memberCount  Int      @default(0)
   postCount    Int      @default(0)
 
-  // Creator
+  // Creator (라운지를 만든 사람)
   creatorId    String
   creator      User     @relation("LoungeCreator", fields: [creatorId], references: [id])
+
+  // Official Creator (공식 크리에이터 - 공식 라운지일 때만 설정)
+  officialCreatorId String?
+  officialCreator   User?    @relation("OfficialLounge", fields: [officialCreatorId], references: [id])
 
   // Relations
   managers     LoungeManager[]
@@ -259,6 +264,7 @@ model Lounge {
   @@index([slug])
   @@index([name])
   @@index([creatorId])
+  @@index([officialCreatorId])
   @@index([memberCount(sort: Desc)])
   @@map("lounges")
 }

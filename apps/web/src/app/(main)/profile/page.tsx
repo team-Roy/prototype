@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { userApi } from '@/lib/user';
 import { creatorApi, CreatorApplication } from '@/lib/creator';
+import { RoleBadge } from '@/components/ui/role-badge';
 
 type ModalType = 'profile' | 'password' | 'creator' | 'delete' | null;
 
@@ -241,7 +242,16 @@ export default function ProfilePage() {
               )}
             </div>
             <div>
-              <h2 className="text-xl font-semibold">{user.nickname}</h2>
+              <div className="flex items-center gap-2">
+                <h2
+                  className={`text-xl font-semibold ${
+                    isAdmin ? 'text-red-500' : isCreator ? 'text-purple-500' : ''
+                  }`}
+                >
+                  {user.nickname}
+                </h2>
+                <RoleBadge role={user.role} size="md" showLabel />
+              </div>
               <p className="text-sm text-muted-foreground">{user.email}</p>
               {user.bio && <p className="text-sm mt-1">{user.bio}</p>}
             </div>
@@ -256,9 +266,14 @@ export default function ProfilePage() {
               <span className="text-muted-foreground">닉네임</span>
               <span>{user.nickname}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span className="text-muted-foreground">역할</span>
-              <span>{isAdmin ? '관리자' : isCreator ? '크리에이터' : '일반 회원'}</span>
+              <span className="flex items-center gap-2">
+                <span className={isAdmin ? 'text-red-500' : isCreator ? 'text-purple-500' : ''}>
+                  {isAdmin ? '관리자' : isCreator ? '크리에이터' : '일반 회원'}
+                </span>
+                <RoleBadge role={user.role} size="sm" />
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">로그인 방식</span>

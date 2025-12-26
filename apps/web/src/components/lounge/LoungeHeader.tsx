@@ -8,6 +8,7 @@ import { LoungeDetailResponse, loungeApi } from '@/lib/lounge';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { formatNumber } from '@fandom/shared';
+import { BadgeCheck, Star } from 'lucide-react';
 
 interface LoungeHeaderProps {
   lounge: LoungeDetailResponse;
@@ -81,12 +82,25 @@ export function LoungeHeader({ lounge, onUpdate }: LoungeHeaderProps) {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">{lounge.name}</h1>
             {lounge.isOfficial && (
-              <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded">
+              <span className="inline-flex items-center gap-1 text-xs bg-blue-500/10 text-blue-600 px-2 py-0.5 rounded-full border border-blue-500/30">
+                <BadgeCheck className="w-3 h-3" />
                 공식
               </span>
             )}
           </div>
           {lounge.description && <p className="text-muted-foreground mt-1">{lounge.description}</p>}
+
+          {/* 공식 크리에이터 정보 */}
+          {lounge.isOfficial && lounge.officialCreator && (
+            <div className="flex items-center gap-2 mt-2 text-sm">
+              <Star className="w-4 h-4 text-purple-500" />
+              <span className="text-purple-500 font-medium">
+                {lounge.officialCreator.creatorName || lounge.officialCreator.nickname}
+              </span>
+              <span className="text-muted-foreground">의 공식 라운지</span>
+            </div>
+          )}
+
           <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
             <span>멤버 {formatNumber(lounge.memberCount)}</span>
             <span>게시물 {formatNumber(lounge.postCount)}</span>

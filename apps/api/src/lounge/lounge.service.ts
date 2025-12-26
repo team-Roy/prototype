@@ -14,7 +14,7 @@ import {
   LoungeSortBy,
   AddManagerDto,
 } from './dto';
-import { ManagerRole, Prisma } from '@prisma/client';
+import { ManagerRole, Prisma, UserRole } from '@prisma/client';
 import { slugify } from '@fandom/shared';
 
 const CACHE_TTL = 300; // 5 minutes
@@ -130,6 +130,15 @@ export class LoungeService {
             profileImage: true,
           },
         },
+        officialCreator: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImage: true,
+            creatorName: true,
+            role: true,
+          },
+        },
         managers: {
           include: {
             user: {
@@ -175,6 +184,7 @@ export class LoungeService {
 
     return {
       ...this.formatLoungeResponse(lounge),
+      officialCreator: lounge.officialCreator,
       managers: lounge.managers.map((m) => ({
         user: m.user,
         role: m.role,
@@ -725,5 +735,228 @@ export class LoungeService {
     if (keys.length > 0) {
       await Promise.all(keys.map((key) => this.redis.del(key)));
     }
+  }
+
+  // =============================================
+  // 공식 라운지 관련 메서드
+  // =============================================
+
+  /**
+   * 크리에이터가 라운지를 공식 인증 요청
+   * - 크리에이터만 가능
+   * - 라운지 소유자(OWNER)이거나 관리자 승인 필요
+   */
+  async claimOfficial(loungeId: string, creatorId: string) {
+    // 1. 사용자가 크리에이터인지 확인
+    const user = await this.prisma.user.findUnique({
+      where: { id: creatorId },
+    });
+
+    if (!user || user.role !== UserRole.CREATOR) {
+      throw new ForbiddenException('크리에이터만 공식 라운지를 인증할 수 있습니다');
+    }
+
+    // 2. 라운지 확인
+    const lounge = await this.prisma.lounge.findUnique({
+      where: { id: loungeId, isActive: true },
+      include: {
+        managers: true,
+      },
+    });
+
+    if (!lounge) {
+      throw new NotFoundException('라운지를 찾을 수 없습니다');
+    }
+
+    // 3. 이미 공식 라운지인 경우
+    if (lounge.isOfficial && lounge.officialCreatorId) {
+      throw new BadRequestException('이미 공식 인증된 라운지입니다');
+    }
+
+    // 4. 크리에이터가 라운지 소유자인지 확인
+    const isOwner = lounge.managers.some(
+      (m) => m.userId === creatorId && m.role === ManagerRole.OWNER
+    );
+
+    if (isOwner) {
+      // 소유자라면 즉시 공식 인증
+      await this.prisma.lounge.update({
+        where: { id: loungeId },
+        data: {
+          isOfficial: true,
+          officialCreatorId: creatorId,
+        },
+      });
+
+      await this.invalidateCache();
+
+      return { message: '공식 라운지로 인증되었습니다' };
+    }
+
+    // 5. 소유자가 아니라면 관리자 승인 필요 (추후 구현)
+    // 현재는 관리자에게만 승인 권한 부여
+    throw new BadRequestException('라운지 소유자가 아닌 경우 관리자에게 공식 인증을 요청해주세요');
+  }
+
+  /**
+   * 관리자가 라운지를 공식 인증 처리
+   */
+  async approveOfficial(loungeId: string, creatorId: string, adminId: string) {
+    // 1. 관리자 권한 확인
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin || admin.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('관리자 권한이 필요합니다');
+    }
+
+    // 2. 라운지 확인
+    const lounge = await this.prisma.lounge.findUnique({
+      where: { id: loungeId, isActive: true },
+    });
+
+    if (!lounge) {
+      throw new NotFoundException('라운지를 찾을 수 없습니다');
+    }
+
+    // 3. 크리에이터 확인
+    const creator = await this.prisma.user.findUnique({
+      where: { id: creatorId },
+    });
+
+    if (!creator || creator.role !== UserRole.CREATOR) {
+      throw new BadRequestException('유효한 크리에이터가 아닙니다');
+    }
+
+    // 4. 공식 인증 처리
+    await this.prisma.$transaction(async (tx) => {
+      // 라운지 공식 인증
+      await tx.lounge.update({
+        where: { id: loungeId },
+        data: {
+          isOfficial: true,
+          officialCreatorId: creatorId,
+        },
+      });
+
+      // 크리에이터를 라운지 매니저(OWNER)로 추가 (없는 경우)
+      const existingManager = await tx.loungeManager.findUnique({
+        where: {
+          userId_loungeId: { userId: creatorId, loungeId },
+        },
+      });
+
+      if (!existingManager) {
+        // 멤버로 먼저 추가
+        const existingMember = await tx.loungeMember.findUnique({
+          where: {
+            userId_loungeId: { userId: creatorId, loungeId },
+          },
+        });
+
+        if (!existingMember) {
+          await tx.loungeMember.create({
+            data: { userId: creatorId, loungeId },
+          });
+          await tx.lounge.update({
+            where: { id: loungeId },
+            data: { memberCount: { increment: 1 } },
+          });
+        }
+
+        // 매니저로 추가 (기존 OWNER와 함께 관리)
+        await tx.loungeManager.create({
+          data: {
+            userId: creatorId,
+            loungeId,
+            role: ManagerRole.OWNER,
+          },
+        });
+      } else if (existingManager.role !== ManagerRole.OWNER) {
+        // 기존 매니저를 OWNER로 승격
+        await tx.loungeManager.update({
+          where: {
+            userId_loungeId: { userId: creatorId, loungeId },
+          },
+          data: { role: ManagerRole.OWNER },
+        });
+      }
+    });
+
+    await this.invalidateCache();
+
+    return { message: '공식 라운지로 인증되었습니다' };
+  }
+
+  /**
+   * 공식 인증 해제 (관리자만)
+   */
+  async revokeOfficial(loungeId: string, adminId: string) {
+    // 관리자 권한 확인
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin || admin.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('관리자 권한이 필요합니다');
+    }
+
+    // 라운지 확인
+    const lounge = await this.prisma.lounge.findUnique({
+      where: { id: loungeId, isActive: true },
+    });
+
+    if (!lounge) {
+      throw new NotFoundException('라운지를 찾을 수 없습니다');
+    }
+
+    if (!lounge.isOfficial) {
+      throw new BadRequestException('공식 인증된 라운지가 아닙니다');
+    }
+
+    await this.prisma.lounge.update({
+      where: { id: loungeId },
+      data: {
+        isOfficial: false,
+        officialCreatorId: null,
+      },
+    });
+
+    await this.invalidateCache();
+
+    return { message: '공식 인증이 해제되었습니다' };
+  }
+
+  /**
+   * 크리에이터의 공식 라운지 목록 조회
+   */
+  async getOfficialLounges(creatorId: string) {
+    const lounges = await this.prisma.lounge.findMany({
+      where: {
+        officialCreatorId: creatorId,
+        isOfficial: true,
+        isActive: true,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImage: true,
+          },
+        },
+        officialCreator: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImage: true,
+            creatorName: true,
+          },
+        },
+      },
+    });
+
+    return lounges.map((lounge) => this.formatLoungeResponse(lounge));
   }
 }

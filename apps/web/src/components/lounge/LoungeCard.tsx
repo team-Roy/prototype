@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { LoungeResponse } from '@/lib/lounge';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatNumber } from '@fandom/shared';
+import { BadgeCheck } from 'lucide-react';
 
 interface LoungeCardProps {
   lounge: LoungeResponse;
@@ -32,12 +33,10 @@ export function LoungeCard({ lounge }: LoungeCardProps) {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <h3 className="font-semibold truncate">{lounge.name}</h3>
                 {lounge.isOfficial && (
-                  <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
-                    공식
-                  </span>
+                  <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
                 )}
               </div>
               {lounge.description && (

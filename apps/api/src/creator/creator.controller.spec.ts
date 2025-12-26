@@ -62,11 +62,10 @@ describe('CreatorController', () => {
 
   describe('apply', () => {
     const applyDto = {
-      creatorName: '테스트 크리에이터',
-      channelUrl: 'https://youtube.com/@test',
-      channelType: 'youtube',
-      followerCount: '10000',
-      introduction: '안녕하세요',
+      stageName: '테스트 크리에이터',
+      category: 'youtube',
+      description: '안녕하세요',
+      portfolioUrl: 'https://youtube.com/@test',
     };
 
     it('should create a creator application', async () => {

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { SearchBar } from '@/components/search';
 import { NotificationDropdown } from '@/components/notification';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { RoleBadge } from '@/components/ui/role-badge';
 
 export function Header() {
   const router = useRouter();
@@ -52,7 +53,18 @@ export function Header() {
                 href="/profile"
                 className="hidden sm:flex items-center gap-2 px-2 py-1 rounded-md hover:bg-accent transition-colors"
               >
-                <span className="text-sm font-medium truncate max-w-[100px]">{user.nickname}</span>
+                <span
+                  className={`text-sm font-medium truncate max-w-[100px] ${
+                    user.role === 'ADMIN'
+                      ? 'text-red-500'
+                      : user.role === 'CREATOR'
+                        ? 'text-purple-500'
+                        : ''
+                  }`}
+                >
+                  {user.nickname}
+                </span>
+                <RoleBadge role={user.role} size="sm" />
               </Link>
               <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:flex">
                 로그아웃

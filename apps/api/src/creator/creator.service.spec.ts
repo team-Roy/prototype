@@ -87,11 +87,10 @@ describe('CreatorService', () => {
 
   describe('applyForCreator', () => {
     const applyDto = {
-      creatorName: '테스트 크리에이터',
-      channelUrl: 'https://youtube.com/@testcreator',
-      channelType: 'youtube',
-      followerCount: '10000',
-      introduction: '안녕하세요, 테스트 크리에이터입니다.',
+      stageName: '테스트 크리에이터',
+      category: 'youtube',
+      description: '안녕하세요, 테스트 크리에이터입니다.',
+      portfolioUrl: 'https://youtube.com/@testcreator',
     };
 
     it('should successfully create a creator application', async () => {
@@ -105,11 +104,10 @@ describe('CreatorService', () => {
       expect(mockPrismaService.creatorApplication.create).toHaveBeenCalledWith({
         data: {
           userId: 'user-1',
-          creatorName: applyDto.creatorName,
-          channelUrl: applyDto.channelUrl,
-          channelType: applyDto.channelType,
-          followerCount: applyDto.followerCount,
-          introduction: applyDto.introduction,
+          creatorName: applyDto.stageName,
+          channelUrl: applyDto.portfolioUrl || '',
+          channelType: applyDto.category,
+          introduction: applyDto.description,
         },
       });
     });
@@ -172,24 +170,23 @@ describe('CreatorService', () => {
       expect(createCall.data).toHaveProperty('introduction');
     });
 
-    it('should handle optional followerCount', async () => {
-      const dtoWithoutFollowerCount = {
-        creatorName: '테스트 크리에이터',
-        channelUrl: 'https://youtube.com/@testcreator',
-        channelType: 'youtube',
-        introduction: '안녕하세요',
+    it('should handle optional portfolioUrl', async () => {
+      const dtoWithoutPortfolioUrl = {
+        stageName: '테스트 크리에이터',
+        category: 'youtube',
+        description: '안녕하세요',
       };
 
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
       mockPrismaService.creatorApplication.findFirst.mockResolvedValue(null);
       mockPrismaService.creatorApplication.create.mockResolvedValue({
         ...mockApplication,
-        followerCount: null,
+        channelUrl: '',
       });
 
-      const result = await service.applyForCreator('user-1', dtoWithoutFollowerCount);
+      const result = await service.applyForCreator('user-1', dtoWithoutPortfolioUrl);
 
-      expect(result.followerCount).toBeNull();
+      expect(result.channelUrl).toBe('');
     });
   });
 

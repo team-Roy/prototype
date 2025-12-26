@@ -3,3 +3,4 @@ export * from './update-lounge.dto';
 export * from './lounge-list-query.dto';
 export * from './add-manager.dto';
 export * from './ban-user.dto';
+export * from './claim-official.dto';

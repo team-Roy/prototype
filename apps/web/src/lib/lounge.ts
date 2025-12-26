@@ -18,8 +18,17 @@ export interface LoungeResponse {
   };
 }
 
+export interface OfficialCreator {
+  id: string;
+  nickname: string;
+  profileImage: string | null;
+  creatorName: string | null;
+  role: string;
+}
+
 export interface LoungeDetailResponse extends LoungeResponse {
   rules: string | null;
+  officialCreator: OfficialCreator | null;
   managers: {
     user: {
       id: string;
@@ -149,6 +158,17 @@ export const loungeApi = {
         };
       };
     }>(`/lounges/${id}/members`, { params: { page, limit } });
+    return response.data.data;
+  },
+
+  // 공식 라운지 관련 API
+  claimOfficial: async (id: string) => {
+    const response = await api.post<{ data: { message: string } }>(`/lounges/${id}/claim-official`);
+    return response.data.data;
+  },
+
+  getOfficialLounges: async (creatorId: string) => {
+    const response = await api.get<{ data: LoungeResponse[] }>(`/lounges/official/${creatorId}`);
     return response.data.data;
   },
 };
