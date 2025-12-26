@@ -17,9 +17,15 @@ frontend:
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
         - cp apps/web/.next/standalone/apps/web/package.json apps/web/.amplify-hosting/compute/default/
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
-        # outputFileTracingRoot로 인해 루트 node_modules에 모든 의존성 포함됨
-        # symlink를 실제 파일로 복사 (-L 옵션)
+        # 디버깅: standalone 구조 확인
+        - echo "=== Standalone structure ==="
+        - ls -la apps/web/.next/standalone/
+        - ls -la apps/web/.next/standalone/node_modules/ 2>/dev/null || echo "no root node_modules"
+        - ls -la apps/web/.next/standalone/apps/web/node_modules/ 2>/dev/null || echo "no apps/web node_modules"
+        # 루트 node_modules의 .pnpm 폴더 복사
         - cp -rL apps/web/.next/standalone/node_modules apps/web/.amplify-hosting/compute/default/
+        # apps/web/node_modules의 symlink들을 실제 파일로 복사
+        - test -d apps/web/.next/standalone/apps/web/node_modules && cp -rL apps/web/.next/standalone/apps/web/node_modules/* apps/web/.amplify-hosting/compute/default/node_modules/ || echo "No apps/web node_modules"
         - test -d apps/web/public && cp -r apps/web/public/* apps/web/.amplify-hosting/static/ || echo "No public folder"
         - echo "=== Size check ==="
         - du -sh apps/web/.amplify-hosting/compute/default/
