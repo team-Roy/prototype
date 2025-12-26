@@ -17,22 +17,27 @@ frontend:
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
         - cp apps/web/.next/standalone/apps/web/package.json apps/web/.amplify-hosting/compute/default/
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
-        # standalone용 package.json 생성 (workspace: 프로토콜 제거)
-        - |
-          cat > apps/web/.amplify-hosting/compute/default/package.json << 'PKGJSON'
-          {
-            "name": "fandom-web-standalone",
-            "version": "0.0.1",
-            "private": true,
-            "dependencies": {
-              "next": "14.2.33",
-              "react": "18.3.1",
-              "react-dom": "18.3.1"
-            }
-          }
-          PKGJSON
-        # npm으로 production 의존성 설치 (--prefix로 디렉토리 지정)
-        - npm install --prefix apps/web/.amplify-hosting/compute/default --omit=dev --legacy-peer-deps --no-audit --no-fund
+        # pnpm standalone의 .pnpm에서 실제 패키지를 찾아서 복사
+        - mkdir -p apps/web/.amplify-hosting/compute/default/node_modules
+        # next 패키지 복사
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/next@*/node_modules/next apps/web/.amplify-hosting/compute/default/node_modules/
+        # react, react-dom 복사
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/react@*/node_modules/react apps/web/.amplify-hosting/compute/default/node_modules/
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/react-dom@*/node_modules/react-dom apps/web/.amplify-hosting/compute/default/node_modules/
+        # next의 peer dependencies 복사 (styled-jsx, scheduler 등)
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/styled-jsx@*/node_modules/styled-jsx apps/web/.amplify-hosting/compute/default/node_modules/ 2>/dev/null || true
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/scheduler@*/node_modules/scheduler apps/web/.amplify-hosting/compute/default/node_modules/ 2>/dev/null || true
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/caniuse-lite@*/node_modules/caniuse-lite apps/web/.amplify-hosting/compute/default/node_modules/ 2>/dev/null || true
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/postcss@*/node_modules/postcss apps/web/.amplify-hosting/compute/default/node_modules/ 2>/dev/null || true
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/busboy@*/node_modules/busboy apps/web/.amplify-hosting/compute/default/node_modules/ 2>/dev/null || true
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/streamsearch@*/node_modules/streamsearch apps/web/.amplify-hosting/compute/default/node_modules/ 2>/dev/null || true
+        # @next 스코프 패키지들
+        - mkdir -p apps/web/.amplify-hosting/compute/default/node_modules/@next
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/@next+env@*/node_modules/@next/env apps/web/.amplify-hosting/compute/default/node_modules/@next/ 2>/dev/null || true
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/@next+swc-linux-x64-gnu@*/node_modules/@next/swc-linux-x64-gnu apps/web/.amplify-hosting/compute/default/node_modules/@next/ 2>/dev/null || true
+        # client-only, server-only
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/client-only@*/node_modules/client-only apps/web/.amplify-hosting/compute/default/node_modules/ 2>/dev/null || true
+        - cp -r apps/web/.next/standalone/node_modules/.pnpm/server-only@*/node_modules/server-only apps/web/.amplify-hosting/compute/default/node_modules/ 2>/dev/null || true
         - test -d apps/web/public && cp -r apps/web/public/* apps/web/.amplify-hosting/static/ || echo "No public folder"
         - echo "=== Size check ==="
         - du -sh apps/web/.amplify-hosting/compute/default/
