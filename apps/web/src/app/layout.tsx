@@ -8,13 +8,23 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: '팬덤 라운지',
   description: '소규모 버튜버/크리에이터 팬덤 커뮤니티 플랫폼',
+  metadataBase: new URL('https://www.fandom-lounge.com'),
+  openGraph: {
+    title: '팬덤 라운지',
+    description: '소규모 버튜버/크리에이터 팬덤 커뮤니티 플랫폼',
+    url: 'https://www.fandom-lounge.com',
+    siteName: '팬덤 라운지',
+    locale: 'ko_KR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '팬덤 라운지',
+    description: '소규모 버튜버/크리에이터 팬덤 커뮤니티 플랫폼',
+  },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" suppressHydrationWarning>
       <body className={inter.className}>
