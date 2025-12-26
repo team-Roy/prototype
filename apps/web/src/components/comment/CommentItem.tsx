@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
 import { CommentResponse } from '@/lib/comment';
 import { CommentForm } from './CommentForm';
+import { UserNameWithRole } from '@/components/ui/role-badge';
 import { formatRelativeTime } from '@fandom/shared';
 
 interface CommentItemProps {
@@ -65,7 +66,11 @@ export function CommentItem({
               {comment.author.nickname[0]}
             </div>
           )}
-          <span className="text-sm font-medium">{comment.author.nickname}</span>
+          <UserNameWithRole
+            nickname={comment.author.nickname}
+            role={comment.author.role || 'USER'}
+            className="text-sm"
+          />
           <span className="text-xs text-muted-foreground">
             {formatRelativeTime(new Date(comment.createdAt))}
           </span>

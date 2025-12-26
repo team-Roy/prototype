@@ -4,6 +4,7 @@ export interface CommentAuthor {
   id: string | null;
   nickname: string;
   profileImage: string | null;
+  role?: 'USER' | 'CREATOR' | 'ADMIN';
 }
 
 export interface CommentResponse {

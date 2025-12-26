@@ -45,6 +45,7 @@ export class CommentService {
               id: true,
               nickname: true,
               profileImage: true,
+              role: true,
             },
           },
           replies: {
@@ -57,6 +58,7 @@ export class CommentService {
                   id: true,
                   nickname: true,
                   profileImage: true,
+                  role: true,
                 },
               },
             },
@@ -183,6 +185,7 @@ export class CommentService {
               id: true,
               nickname: true,
               profileImage: true,
+              role: true,
             },
           },
         },
@@ -256,6 +259,7 @@ export class CommentService {
             id: true,
             nickname: true,
             profileImage: true,
+            role: true,
           },
         },
       },
@@ -327,6 +331,7 @@ export class CommentService {
       id: string;
       nickname: string;
       profileImage: string | null;
+      role?: string;
     };
     replies?: Array<{
       id: string;
@@ -342,6 +347,7 @@ export class CommentService {
         id: string;
         nickname: string;
         profileImage: string | null;
+        role?: string;
       };
     }>;
   }): FormattedComment {
@@ -353,7 +359,7 @@ export class CommentService {
       isAnonymous: comment.isAnonymous,
       isDeleted,
       author: comment.isAnonymous
-        ? { id: null, nickname: '익명', profileImage: null }
+        ? { id: null, nickname: '익명', profileImage: null, role: 'USER' }
         : comment.author,
       upvoteCount: comment.upvoteCount,
       downvoteCount: comment.downvoteCount,
@@ -374,6 +380,7 @@ export interface FormattedComment {
     id: string | null;
     nickname: string;
     profileImage: string | null;
+    role?: string;
   };
   upvoteCount: number;
   downvoteCount: number;

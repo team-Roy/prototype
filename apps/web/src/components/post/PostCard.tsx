@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { PostResponse } from '@/lib/post';
 import { Card, CardContent } from '@/components/ui/card';
+import { UserNameWithRole } from '@/components/ui/role-badge';
 import { formatRelativeTime, formatNumber } from '@fandom/shared';
 
 interface PostCardProps {
@@ -68,7 +69,10 @@ export function PostCard({ post, loungeSlug: _loungeSlug }: PostCardProps) {
 
               {/* Meta Info */}
               <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                <span>{post.author.nickname}</span>
+                <UserNameWithRole
+                  nickname={post.author.nickname}
+                  role={post.author.role || 'USER'}
+                />
                 <span>·</span>
                 <span>{formatRelativeTime(new Date(post.createdAt))}</span>
               </div>

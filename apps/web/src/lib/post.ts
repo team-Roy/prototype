@@ -22,6 +22,7 @@ export interface PostResponse {
     id: string;
     nickname: string;
     profileImage: string | null;
+    role?: 'USER' | 'CREATOR' | 'ADMIN';
   };
   tags: string[];
   thumbnail: string | null;

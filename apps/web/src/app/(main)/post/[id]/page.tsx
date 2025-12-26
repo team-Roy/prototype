@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CommentList } from '@/components/comment';
 import { VoteButtons } from '@/components/vote';
+import { UserNameWithRole } from '@/components/ui/role-badge';
 import { formatRelativeTime, formatNumber } from '@fandom/shared';
 
 export default function PostDetailPage() {
@@ -108,7 +109,10 @@ export default function PostDetailPage() {
             {/* Author & Meta */}
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{post.author.nickname}</span>
+                <UserNameWithRole
+                  nickname={post.author.nickname}
+                  role={post.author.role || 'USER'}
+                />
                 <span>·</span>
                 <span>{formatRelativeTime(new Date(post.createdAt))}</span>
               </div>

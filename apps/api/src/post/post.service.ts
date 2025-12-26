@@ -65,6 +65,7 @@ export class PostService {
               id: true,
               nickname: true,
               profileImage: true,
+              role: true,
             },
           },
           tags: true,
@@ -102,6 +103,7 @@ export class PostService {
             id: true,
             nickname: true,
             profileImage: true,
+            role: true,
           },
         },
         lounge: {
@@ -186,6 +188,7 @@ export class PostService {
               id: true,
               nickname: true,
               profileImage: true,
+              role: true,
             },
           },
         },
@@ -267,6 +270,7 @@ export class PostService {
               id: true,
               nickname: true,
               profileImage: true,
+              role: true,
             },
           },
           tags: true,
@@ -416,6 +420,7 @@ export class PostService {
         id: string;
         nickname: string;
         profileImage: string | null;
+        role?: string;
       };
       tags?: { tag: string }[];
       media?: { url: string; thumbnailUrl: string | null }[];
@@ -437,7 +442,9 @@ export class PostService {
       commentCount: post._count?.comments ?? post.commentCount,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
-      author: post.isAnonymous ? { id: '', nickname: '익명', profileImage: null } : post.author,
+      author: post.isAnonymous
+        ? { id: '', nickname: '익명', profileImage: null, role: 'USER' }
+        : post.author,
       tags: post.tags?.map((t) => t.tag) || [],
       thumbnail: post.media?.[0]?.thumbnailUrl || post.media?.[0]?.url || null,
     };
