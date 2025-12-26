@@ -17,9 +17,8 @@ frontend:
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
         - cp apps/web/.next/standalone/apps/web/package.json apps/web/.amplify-hosting/compute/default/
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
-        # 최소한의 package.json 생성 후 npm install (next와 react만)
-        - echo '{"dependencies":{"next":"14.2.33","react":"18.2.0","react-dom":"18.2.0"}}' > apps/web/.amplify-hosting/compute/default/package.json
-        - (cd apps/web/.amplify-hosting/compute/default && npm install --omit=dev --legacy-peer-deps)
+        # standalone에 포함된 node_modules 사용 (npm install보다 훨씬 작음)
+        - cp -r apps/web/.next/standalone/node_modules apps/web/.amplify-hosting/compute/default/
         - test -d apps/web/public && cp -r apps/web/public/* apps/web/.amplify-hosting/static/ || echo "No public folder"
         - echo "=== Size check ==="
         - du -sh apps/web/.amplify-hosting/compute/default/
