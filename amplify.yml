@@ -31,8 +31,8 @@ frontend:
             }
           }
           PKGJSON
-        # npm으로 production 의존성 설치
-        - cd apps/web/.amplify-hosting/compute/default && npm install --omit=dev --legacy-peer-deps --no-audit --no-fund
+        # npm으로 production 의존성 설치 (--prefix로 디렉토리 지정)
+        - npm install --prefix apps/web/.amplify-hosting/compute/default --omit=dev --legacy-peer-deps --no-audit --no-fund
         - test -d apps/web/public && cp -r apps/web/public/* apps/web/.amplify-hosting/static/ || echo "No public folder"
         - echo "=== Size check ==="
         - du -sh apps/web/.amplify-hosting/compute/default/
