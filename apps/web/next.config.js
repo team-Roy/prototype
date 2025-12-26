@@ -1,7 +1,11 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  // 모노레포에서 standalone 빌드 시 루트부터 파일 추적
+  outputFileTracingRoot: path.join(__dirname, '../../'),
   transpilePackages: ['@fandom/shared'],
   images: {
     remotePatterns: [
