@@ -39,7 +39,65 @@ export interface AdminLounge {
   };
 }
 
+// 크리에이터 신청 관련 타입
+export interface CreatorApplicationUser {
+  id: string;
+  email: string;
+  nickname: string;
+  profileImage: string | null;
+  bio: string | null;
+  createdAt: string;
+}
+
+export interface CreatorApplication {
+  id: string;
+  userId: string;
+  creatorName: string;
+  channelUrl: string;
+  channelType: string;
+  followerCount?: string;
+  introduction: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: CreatorApplicationUser;
+}
+
+export type ReviewAction = 'APPROVE' | 'REJECT';
+
+export interface ReviewApplicationData {
+  action: ReviewAction;
+  rejectionReason?: string;
+}
+
 export const adminApi = {
+  // 크리에이터 신청 목록 조회
+  getCreatorApplications: async (
+    status?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  ): Promise<CreatorApplication[]> => {
+    const params = status ? `?status=${status}` : '';
+    const response = await api.get(`/creator/admin/applications${params}`);
+    return response.data.data;
+  },
+
+  // 크리에이터 신청 상세 조회
+  getCreatorApplication: async (id: string): Promise<CreatorApplication> => {
+    const response = await api.get(`/creator/admin/applications/${id}`);
+    return response.data.data;
+  },
+
+  // 크리에이터 신청 처리 (승인/거절)
+  reviewCreatorApplication: async (
+    id: string,
+    data: ReviewApplicationData
+  ): Promise<{ message: string }> => {
+    const response = await api.post(`/creator/admin/applications/${id}/review`, data);
+    return response.data.data;
+  },
+
   getStats: async () => {
     const response = await api.get<{ data: AdminStats }>('/admin/stats');
     return response.data.data;

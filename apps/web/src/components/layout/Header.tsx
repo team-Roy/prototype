@@ -39,6 +39,11 @@ export function Header() {
           <ThemeToggle />
           {isAuthenticated && user ? (
             <>
+              {user.role === 'ADMIN' && (
+                <Button variant="ghost" size="sm" className="hidden md:flex" asChild>
+                  <Link href="/admin">관리자</Link>
+                </Button>
+              )}
               <Button variant="ghost" size="sm" className="hidden md:flex" asChild>
                 <Link href="/lounge/create">라운지 만들기</Link>
               </Button>

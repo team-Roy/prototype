@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FanScoreService } from '../fan-score/fan-score.service';
-import { QuestType, QuestActionType, UserRole } from '@prisma/client';
+import { QuestType, QuestActionType, UserRole, BadgeType } from '@prisma/client';
 import { ScoreActionType } from '../fan-score/dto/fan-score.dto';
 import {
   CreateQuestDto,

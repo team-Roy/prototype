@@ -45,15 +45,14 @@ export class CreatorService {
       });
     }
 
-    // 신청 생성
+    // 신청 생성 (프론트엔드 필드명 -> DB 필드명 매핑)
     const application = await this.prisma.creatorApplication.create({
       data: {
         userId,
-        creatorName: dto.creatorName,
-        channelUrl: dto.channelUrl,
-        channelType: dto.channelType,
-        followerCount: dto.followerCount,
-        introduction: dto.introduction,
+        creatorName: dto.stageName,
+        channelUrl: dto.portfolioUrl || '',
+        channelType: dto.category,
+        introduction: dto.description,
       },
     });
 
