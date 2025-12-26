@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { Resend } from 'resend';
 
 export interface EmailOptions {
   to: string | string[];
@@ -12,20 +12,14 @@ export interface EmailOptions {
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly sesClient: SESClient;
+  private readonly resend: Resend;
   private readonly fromEmail: string;
   private readonly appUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.sesClient = new SESClient({
-      region: this.configService.get('AWS_REGION', 'ap-northeast-2'),
-      credentials: {
-        accessKeyId: this.configService.get('AWS_ACCESS_KEY_ID', ''),
-        secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY', ''),
-      },
-    });
-    this.fromEmail = this.configService.get('SES_FROM_EMAIL', 'noreply@fandom-lounge.com');
-    this.appUrl = this.configService.get('APP_URL', 'https://fandom-lounge.vercel.app');
+    this.resend = new Resend(this.configService.get('RESEND_API_KEY', ''));
+    this.fromEmail = this.configService.get('EMAIL_FROM', 'noreply@fandom-lounge.com');
+    this.appUrl = this.configService.get('APP_URL', 'https://fandom-lounge.com');
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
@@ -33,33 +27,20 @@ export class EmailService {
     const toAddresses = Array.isArray(to) ? to : [to];
 
     try {
-      const command = new SendEmailCommand({
-        Source: `팬덤 라운지 <${this.fromEmail}>`,
-        Destination: {
-          ToAddresses: toAddresses,
-        },
-        Message: {
-          Subject: {
-            Charset: 'UTF-8',
-            Data: subject,
-          },
-          Body: {
-            Html: {
-              Charset: 'UTF-8',
-              Data: html,
-            },
-            ...(text && {
-              Text: {
-                Charset: 'UTF-8',
-                Data: text,
-              },
-            }),
-          },
-        },
+      const { data, error } = await this.resend.emails.send({
+        from: `팬덤 라운지 <${this.fromEmail}>`,
+        to: toAddresses,
+        subject,
+        html,
+        text,
       });
 
-      await this.sesClient.send(command);
-      this.logger.log(`Email sent successfully to ${toAddresses.join(', ')}`);
+      if (error) {
+        this.logger.error(`Failed to send email: ${JSON.stringify(error)}`);
+        return false;
+      }
+
+      this.logger.log(`Email sent successfully to ${toAddresses.join(', ')} (id: ${data?.id})`);
       return true;
     } catch (error) {
       this.logger.error(`Failed to send email: ${error}`);

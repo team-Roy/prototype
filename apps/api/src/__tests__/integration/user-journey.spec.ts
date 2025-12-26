@@ -19,6 +19,7 @@ import { VoteService } from '../../vote/vote.service';
 import { NotificationService } from '../../notification/notification.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
+import { EmailService } from '../../email/email.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserRole, AuthProvider, PostType } from '@prisma/client';
@@ -124,6 +125,16 @@ describe('User Journey Integration Tests', () => {
       delete: jest.fn(),
       deleteMany: jest.fn(),
     },
+    emailVerificationToken: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    passwordResetToken: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     lounge: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
@@ -222,6 +233,11 @@ describe('User Journey Integration Tests', () => {
     }),
   };
 
+  const mockEmailService = {
+    sendEmailVerification: jest.fn().mockResolvedValue(true),
+    sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
+  };
+
   let authService: AuthService;
   let loungeService: LoungeService;
   let postService: PostService;
@@ -243,6 +259,7 @@ describe('User Journey Integration Tests', () => {
         { provide: RedisService, useValue: mockRedisService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: EmailService, useValue: mockEmailService },
       ],
     }).compile();
 

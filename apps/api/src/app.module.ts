@@ -17,6 +17,10 @@ import { SearchModule } from './search/search.module';
 import { NotificationModule } from './notification/notification.module';
 import { AdminModule } from './admin/admin.module';
 import { EmailModule } from './email/email.module';
+import { CreatorModule } from './creator/creator.module';
+import { FanScoreModule } from './fan-score/fan-score.module';
+import { QuestModule } from './quest/quest.module';
+import { CreatorPickModule } from './creator-pick/creator-pick.module';
 import { AllExceptionsFilter } from './common/filters';
 import { TransformInterceptor } from './common/interceptors';
 
@@ -58,6 +62,10 @@ import { TransformInterceptor } from './common/interceptors';
     NotificationModule,
     AdminModule,
     EmailModule,
+    CreatorModule,
+    FanScoreModule,
+    QuestModule,
+    CreatorPickModule,
   ],
   providers: [
     {

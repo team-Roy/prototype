@@ -6,7 +6,9 @@ export interface AuthUser {
   email: string;
   nickname: string;
   profileImage: string | null;
+  bio: string | null;
   role: string;
+  provider: string;
   isEmailVerified: boolean;
 }
 
@@ -32,6 +34,7 @@ interface AuthState {
   register: (email: string, password: string, nickname: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: AuthUser | null) => void;
+  refreshUser: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -139,5 +142,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user,
       isAuthenticated: !!user,
     });
+  },
+
+  refreshUser: async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return;
+
+    try {
+      const response = await api.post<{
+        data: { user: AuthUser; tokens: TokenResponse };
+      }>('/auth/refresh', {
+        refreshToken,
+      });
+
+      const { user, tokens } = response.data.data;
+      setAccessToken(tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+
+      set({
+        user,
+        isAuthenticated: true,
+      });
+    } catch {
+      // Ignore errors
+    }
   },
 }));

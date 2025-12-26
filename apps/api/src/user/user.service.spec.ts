@@ -1,8 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { AuthProvider, UserRole } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+
+jest.mock('bcrypt');
 
 describe('UserService', () => {
   let service: UserService;
@@ -24,12 +27,31 @@ describe('UserService', () => {
     deletedAt: null,
   };
 
+  const mockGoogleUser = {
+    ...mockUser,
+    id: 'google-user-1',
+    email: 'google@example.com',
+    password: null,
+    provider: AuthProvider.GOOGLE,
+    providerId: 'google-123',
+  };
+
   const mockPrismaService = {
     user: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
     },
+    refreshToken: {
+      deleteMany: jest.fn(),
+    },
+    passwordResetToken: {
+      deleteMany: jest.fn(),
+    },
+    emailVerificationToken: {
+      deleteMany: jest.fn(),
+    },
+    $transaction: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -190,6 +212,189 @@ describe('UserService', () => {
       const result = await service.checkEmailAvailable('test@example.com');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('deleteAccount', () => {
+    beforeEach(() => {
+      mockPrismaService.$transaction.mockImplementation((operations: unknown[]) => {
+        return Promise.all(operations);
+      });
+    });
+
+    describe('Local account deletion', () => {
+      it('should delete account with valid password', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await expect(service.deleteAccount('user-1', 'password123')).resolves.not.toThrow();
+
+        expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      });
+
+      it('should throw NotFoundException if user not found', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+        await expect(service.deleteAccount('nonexistent', 'password')).rejects.toThrow(
+          NotFoundException
+        );
+      });
+
+      it('should throw BadRequestException if password not provided for LOCAL account', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+
+        await expect(service.deleteAccount('user-1')).rejects.toThrow(BadRequestException);
+      });
+
+      it('should throw BadRequestException if password is invalid', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+        await expect(service.deleteAccount('user-1', 'wrongpassword')).rejects.toThrow(
+          BadRequestException
+        );
+      });
+
+      it('should verify password using bcrypt', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await service.deleteAccount('user-1', 'password123');
+
+        expect(bcrypt.compare).toHaveBeenCalledWith('password123', mockUser.password);
+      });
+    });
+
+    describe('Social account deletion', () => {
+      it('should delete Google account without password', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockGoogleUser);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await expect(service.deleteAccount('google-user-1')).resolves.not.toThrow();
+
+        expect(bcrypt.compare).not.toHaveBeenCalled();
+      });
+
+      it('should delete social account even if password is provided', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockGoogleUser);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await expect(service.deleteAccount('google-user-1', 'somepassword')).resolves.not.toThrow();
+      });
+    });
+
+    describe('Data anonymization', () => {
+      it('should anonymize email with user id', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await service.deleteAccount('user-1', 'password123');
+
+        // $transaction 호출 확인
+        expect(mockPrismaService.$transaction).toHaveBeenCalledWith(
+          expect.arrayContaining([
+            expect.anything(), // refreshToken.deleteMany
+            expect.anything(), // passwordResetToken.deleteMany
+            expect.anything(), // emailVerificationToken.deleteMany
+            expect.anything(), // user.update
+          ])
+        );
+      });
+
+      it('should set deletedAt timestamp', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await service.deleteAccount('user-1', 'password123');
+
+        expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      });
+
+      it('should set isActive to false', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await service.deleteAccount('user-1', 'password123');
+
+        expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      });
+
+      it('should clear sensitive data (password, profileImage, bio, providerId)', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await service.deleteAccount('user-1', 'password123');
+
+        expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      });
+    });
+
+    describe('Token cleanup', () => {
+      it('should delete all refresh tokens', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await service.deleteAccount('user-1', 'password123');
+
+        expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      });
+
+      it('should delete all password reset tokens', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await service.deleteAccount('user-1', 'password123');
+
+        expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      });
+
+      it('should delete all email verification tokens', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        await service.deleteAccount('user-1', 'password123');
+
+        expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      });
+    });
+
+    describe('Already deleted account', () => {
+      it('should throw NotFoundException for already deleted account', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+        await expect(service.deleteAccount('deleted-user', 'password')).rejects.toThrow(
+          NotFoundException
+        );
+      });
+    });
+
+    describe('Edge cases', () => {
+      it('should handle empty password string for LOCAL account', async () => {
+        mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+
+        await expect(service.deleteAccount('user-1', '')).rejects.toThrow(BadRequestException);
+      });
+
+      it('should handle account with no password (null) for LOCAL provider', async () => {
+        const localUserNoPassword = {
+          ...mockUser,
+          password: null,
+        };
+        mockPrismaService.user.findUnique.mockResolvedValue(localUserNoPassword);
+        mockPrismaService.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+
+        // password가 null이면 비밀번호 확인 스킵
+        await expect(service.deleteAccount('user-1')).resolves.not.toThrow();
+      });
     });
   });
 });

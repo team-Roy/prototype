@@ -33,7 +33,9 @@ export interface AuthUser {
   email: string;
   nickname: string;
   profileImage: string | null;
+  bio: string | null;
   role: string;
+  provider: string;
   isEmailVerified: boolean;
 }
 
@@ -338,7 +340,9 @@ export class AuthService {
       email: user.email,
       nickname: user.nickname,
       profileImage: user.profileImage,
+      bio: user.bio,
       role: user.role,
+      provider: user.provider,
       isEmailVerified: user.isEmailVerified,
     };
   }

@@ -16,7 +16,14 @@ datasource db {
 
 enum UserRole {
   USER
+  CREATOR
   ADMIN
+}
+
+enum CreatorApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum AuthProvider {
@@ -88,6 +95,11 @@ model User {
   isEmailVerified Boolean    @default(false)
   lastLoginAt   DateTime?
 
+  // Creator fields (크리에이터 전용)
+  creatorName   String?      // 크리에이터 활동명
+  channelUrl    String?      // 대표 채널 URL
+  isVerifiedCreator Boolean  @default(false) // 공식 인증 크리에이터
+
   // Relations
   loungesCreated    Lounge[]          @relation("LoungeCreator")
   loungeManagers    LoungeManager[]
@@ -101,6 +113,17 @@ model User {
   refreshTokens     RefreshToken[]
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  creatorApplications CreatorApplication[]
+
+  // Phase 2 Relations
+  fanScores         FanScore[]
+  fanBadges         FanBadge[]
+  questsCreated     Quest[]           @relation("QuestCreator")
+  questProgress     QuestProgress[]
+  creatorPicks      CreatorPick[]     @relation("CreatorPickedBy")
+  fanLettersSent    FanLetter[]       @relation("FanLetterSender")
+  fanLettersReceived FanLetter[]      @relation("FanLetterReceiver")
+  loungeMembershipTiers LoungeMembership[]
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -109,6 +132,7 @@ model User {
   @@index([email])
   @@index([nickname])
   @@index([provider, providerId])
+  @@index([role])
   @@map("users")
 }
 
@@ -160,6 +184,37 @@ model EmailVerificationToken {
 }
 
 // ============================================
+// CREATOR APPLICATION (크리에이터 신청)
+// ============================================
+
+model CreatorApplication {
+  id              String                   @id @default(cuid())
+  userId          String
+
+  creatorName     String                   // 활동명
+  channelUrl      String                   // 대표 채널 URL (유튜브, 트위치 등)
+  channelType     String                   // youtube, twitch, afreeca 등
+  followerCount   String?                  // 대략적인 팔로워 수
+  introduction    String                   // 자기소개, 활동 분야 등
+
+  status          CreatorApplicationStatus @default(PENDING)
+
+  // 처리 정보
+  reviewedAt      DateTime?
+  reviewedBy      String?                  // 관리자 ID
+  rejectionReason String?                  // 거절 사유
+
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("creator_applications")
+}
+
+// ============================================
 // LOUNGE (커뮤니티)
 // ============================================
 
@@ -189,6 +244,14 @@ model Lounge {
   members      LoungeMember[]
   posts        Post[]
   bans         LoungeBan[]
+
+  // Phase 2 Relations
+  fanScores        FanScore[]
+  fanBadges        FanBadge[]
+  quests           Quest[]
+  creatorPicks     CreatorPick[]
+  fanLetters       FanLetter[]
+  membershipTiers  LoungeMembership[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -279,6 +342,7 @@ model Post {
   comments    Comment[]
   votes       Vote[]
   reports     Report[]
+  creatorPick CreatorPick?
 
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -456,6 +520,241 @@ model Report {
   @@index([postId])
   @@index([commentId])
   @@map("reports")
+}
+
+// ============================================
+// FAN SCORE & BADGE (팬 참여 시스템)
+// ============================================
+
+enum BadgeType {
+  EARLY_BIRD       // 초기 멤버
+  TOP_FAN          // 월간 최고 기여자
+  ACTIVE_COMMENTER // 활발한 댓글러
+  CONTENT_CREATOR  // 콘텐츠 창작자
+  QUEST_MASTER     // 퀘스트 달성
+  SUPER_FAN        // VIP 멤버십
+  CREATOR_PICK     // 크리에이터 픽
+}
+
+model FanScore {
+  id            String   @id @default(cuid())
+  userId        String
+  loungeId      String
+
+  totalScore    Int      @default(0)   // 총 점수
+  monthlyScore  Int      @default(0)   // 월간 점수 (매월 초기화)
+
+  // 점수 상세 기록
+  postScore     Int      @default(0)   // 게시글 작성 점수
+  commentScore  Int      @default(0)   // 댓글 점수
+  voteScore     Int      @default(0)   // 추천받은 점수
+  questScore    Int      @default(0)   // 퀘스트 완료 점수
+
+  // 순위
+  rank          Int?                   // 라운지 내 순위
+  previousRank  Int?                   // 이전 순위 (변동 표시용)
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lounge        Lounge   @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, loungeId])
+  @@index([loungeId, totalScore(sort: Desc)])
+  @@index([loungeId, monthlyScore(sort: Desc)])
+  @@map("fan_scores")
+}
+
+model FanBadge {
+  id          String    @id @default(cuid())
+  userId      String
+  loungeId    String?   // null = 글로벌 뱃지
+
+  type        BadgeType
+  name        String    // 뱃지 이름
+  description String?   // 뱃지 설명
+  iconUrl     String?   // 뱃지 아이콘
+
+  // 획득 조건
+  awardedAt   DateTime  @default(now())
+  expiresAt   DateTime? // null = 영구 뱃지
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lounge      Lounge?   @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, loungeId, type])
+  @@index([userId])
+  @@index([loungeId])
+  @@map("fan_badges")
+}
+
+// ============================================
+// QUEST SYSTEM (퀘스트 시스템)
+// ============================================
+
+enum QuestType {
+  DAILY          // 일일 퀘스트
+  WEEKLY         // 주간 퀘스트
+  EVENT          // 이벤트 퀘스트
+  ACHIEVEMENT    // 업적 (1회성)
+}
+
+enum QuestActionType {
+  WRITE_POST     // 게시글 작성
+  WRITE_COMMENT  // 댓글 작성
+  RECEIVE_VOTES  // 추천 받기
+  VISIT_LOUNGE   // 라운지 방문
+  SHARE_POST     // 게시글 공유
+  INVITE_FRIEND  // 친구 초대
+  CUSTOM         // 커스텀 (크리에이터 정의)
+}
+
+model Quest {
+  id              String          @id @default(cuid())
+  loungeId        String?         // null = 글로벌 퀘스트
+  creatorId       String?         // 크리에이터가 만든 퀘스트
+
+  type            QuestType
+  actionType      QuestActionType
+
+  title           String          // 퀘스트 제목
+  description     String          // 퀘스트 설명
+  iconUrl         String?         // 아이콘
+
+  // 목표 조건
+  targetCount     Int             @default(1)  // 목표 횟수
+
+  // 보상
+  rewardScore     Int             @default(10) // 보상 점수
+  rewardBadgeType BadgeType?      // 보상 뱃지 (선택)
+
+  // 기간
+  startsAt        DateTime        @default(now())
+  endsAt          DateTime?       // null = 무기한
+
+  isActive        Boolean         @default(true)
+
+  lounge          Lounge?         @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+  creator         User?           @relation("QuestCreator", fields: [creatorId], references: [id])
+  progress        QuestProgress[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([loungeId, type, isActive])
+  @@index([creatorId])
+  @@map("quests")
+}
+
+model QuestProgress {
+  id            String    @id @default(cuid())
+  userId        String
+  questId       String
+
+  currentCount  Int       @default(0)   // 현재 진행 횟수
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest         Quest     @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, questId])
+  @@index([userId, isCompleted])
+  @@index([questId])
+  @@map("quest_progress")
+}
+
+// ============================================
+// CREATOR PICK (크리에이터 픽)
+// ============================================
+
+model CreatorPick {
+  id          String    @id @default(cuid())
+  loungeId    String
+  postId      String    @unique  // 하나의 게시글은 한 번만 픽될 수 있음
+  pickedBy    String    // 크리에이터 ID
+
+  comment     String?   // 크리에이터 코멘트
+
+  lounge      Lounge    @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+  post        Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  picker      User      @relation("CreatorPickedBy", fields: [pickedBy], references: [id])
+
+  createdAt   DateTime  @default(now())
+  @@index([loungeId, createdAt(sort: Desc)])
+  @@map("creator_picks")
+}
+
+// ============================================
+// FAN LETTER (팬레터)
+// ============================================
+
+model FanLetter {
+  id          String    @id @default(cuid())
+  senderId    String
+  receiverId  String    // 크리에이터 ID
+  loungeId    String?   // 특정 라운지를 통해 보낸 경우
+
+  content     String    // 팬레터 내용 (암호화 권장)
+  isAnonymous Boolean   @default(false)
+
+  // 답장
+  replyContent String?
+  repliedAt    DateTime?
+
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+
+  sender      User      @relation("FanLetterSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User      @relation("FanLetterReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  lounge      Lounge?   @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+
+  @@index([receiverId, isRead, createdAt(sort: Desc)])
+  @@index([senderId])
+  @@map("fan_letters")
+}
+
+// ============================================
+// MEMBERSHIP TIER (멤버십)
+// ============================================
+
+enum MembershipTier {
+  FREE          // 무료
+  SUPPORTER     // 서포터 (월 3,000원)
+  VIP           // VIP (월 10,000원)
+  SUPER_FAN     // 슈퍼팬 (월 30,000원)
+}
+
+model LoungeMembership {
+  id          String          @id @default(cuid())
+  userId      String
+  loungeId    String
+
+  tier        MembershipTier  @default(FREE)
+
+  // 구독 정보
+  startedAt   DateTime        @default(now())
+  expiresAt   DateTime?       // null = 무기한 (무료)
+
+  // 결제 정보
+  lastPaymentAt DateTime?
+  nextPaymentAt DateTime?
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lounge      Lounge          @relation(fields: [loungeId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([userId, loungeId])
+  @@index([loungeId, tier])
+  @@map("lounge_memberships")
 }
 
 // ============================================
