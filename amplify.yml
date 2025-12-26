@@ -17,8 +17,22 @@ frontend:
         - cp apps/web/.next/standalone/apps/web/server.js apps/web/.amplify-hosting/compute/default/
         - cp apps/web/.next/standalone/apps/web/package.json apps/web/.amplify-hosting/compute/default/
         - cp -r apps/web/.next/standalone/apps/web/.next apps/web/.amplify-hosting/compute/default/
-        # npm으로 production 의존성만 설치 (pnpm symlink 문제 회피)
-        - cd apps/web/.amplify-hosting/compute/default && npm install next@14.2.33 react@18.3.1 react-dom@18.3.1 --omit=dev --legacy-peer-deps --no-audit --no-fund
+        # standalone용 package.json 생성 (workspace: 프로토콜 제거)
+        - |
+          cat > apps/web/.amplify-hosting/compute/default/package.json << 'PKGJSON'
+          {
+            "name": "fandom-web-standalone",
+            "version": "0.0.1",
+            "private": true,
+            "dependencies": {
+              "next": "14.2.33",
+              "react": "18.3.1",
+              "react-dom": "18.3.1"
+            }
+          }
+          PKGJSON
+        # npm으로 production 의존성 설치
+        - cd apps/web/.amplify-hosting/compute/default && npm install --omit=dev --legacy-peer-deps --no-audit --no-fund
         - test -d apps/web/public && cp -r apps/web/public/* apps/web/.amplify-hosting/static/ || echo "No public folder"
         - echo "=== Size check ==="
         - du -sh apps/web/.amplify-hosting/compute/default/
