@@ -15,7 +15,7 @@
 - 네임서버: `angelina.ns.cloudflare.com`, `hasslo.ns.cloudflare.com`
 - CNAME Flattening으로 루트 도메인 지원
 - **www.fandom-lounge.com** - 작동 확인
-- **fandom-lounge.com** - DNS 전파 완료 (일부 ISP 캐시 대기중)
+- **fandom-lounge.com** - DNS 전파 완료
 - **api.fandom-lounge.com** - EC2 백엔드 연결
 
 ### 3. Cloudflare DNS 레코드
@@ -63,15 +63,23 @@
   - `GET /lounges/official/:creatorId` - 크리에이터의 공식 라운지 목록
 - 공식 라운지 표시: BadgeCheck 아이콘 + 공식 크리에이터 정보
 
----
+### 9. 게시물/댓글 역할 뱃지 표시 (2025-01-01)
 
-## 진행 중인 작업
+- 백엔드: `post.service.ts`, `comment.service.ts`에서 author 조회 시 `role` 필드 포함
+- 프론트엔드:
+  - `PostCard.tsx` - 게시물 목록에 작성자 역할 뱃지
+  - `CommentItem.tsx` - 댓글/답글에 작성자 역할 뱃지
+  - `post/[id]/page.tsx` - 게시물 상세에 역할 뱃지
+- 타입 업데이트: `post.ts`, `comment.ts`에 role 필드 추가
+- 익명 게시물/댓글은 `role: 'USER'`로 처리
 
-### 이메일 기능 테스트
+### 10. Open Graph 이미지 설정 (2025-01-01)
 
-- Resend 백엔드 연동 완료
-- 이메일 인증 기능 테스트 필요
-- 비밀번호 찾기 기능 테스트 필요
+- Next.js `ImageResponse` API로 동적 OG 이미지 생성
+- 파일: `apps/web/src/app/opengraph-image.tsx`
+- 디자인: 보라색-핑크 그라데이션 배경, F 로고, 제목, 설명
+- 카카오톡, 트위터 등 링크 미리보기 지원
+- OG 메타태그: `apps/web/src/app/layout.tsx`
 
 ---
 
@@ -79,9 +87,8 @@
 
 1. [ ] 이메일 인증 기능 테스트
 2. [ ] 비밀번호 찾기 기능 테스트
-3. [x] DNS 전파 완료 확인 (fandom-lounge.com)
-4. [ ] 크리에이터 라운지 인증 플로우 프론트엔드 UI 추가
-5. [ ] 관리자 대시보드에서 공식 라운지 승인 기능 추가
+3. [ ] 크리에이터 라운지 인증 플로우 프론트엔드 UI 추가
+4. [ ] 관리자 대시보드에서 공식 라운지 승인 기능 추가
 
 ---
 
@@ -183,6 +190,8 @@ postgresql://postgres:DoSgqeWNQGL4nLHY8R28@fandom-lounge-db.cfweqkg4axxx.ap-nort
 - `apps/web/` - Next.js 프론트엔드
 - `apps/api/` - NestJS 백엔드
 - `apps/api/src/email/email.service.ts` - Resend 이메일 서비스
+- `apps/web/src/app/opengraph-image.tsx` - OG 이미지 생성
+- `apps/web/src/components/ui/role-badge.tsx` - 역할 뱃지 컴포넌트
 
 ---
 
